@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "benford position [datafile]\n");
         return 1;
     }
-
-    // TODO: Implement.
+    int i = count_digits(strtol(argv[1], NULL, 10));
+    printf("%d digits\n", i);
+    return 0;
 }
