@@ -8,13 +8,19 @@
  * - printf("%ds: %d\n")
  *
  */
+void print_digits(int *digits);
+
 int main(int argc, char **argv) {
 
     if (argc < 2 || argc > 3) {
         fprintf(stderr, "benford position [datafile]\n");
         return 1;
     }
-    int i = count_digits(strtol(argv[1], NULL, 10));
-    printf("%d digits\n", i);
+    
     return 0;
+ }
+
+void print_digits(int *digits) {
+    for (int i = 0; i < sizeof(digits) / sizeof(digits[0]); i++) {
+    }
 }
