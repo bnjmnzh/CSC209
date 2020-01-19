@@ -16,11 +16,37 @@ int main(int argc, char **argv) {
         fprintf(stderr, "benford position [datafile]\n");
         return 1;
     }
-    
+    int position = strtol(argv[1], NULL, 10);
+    int digits[BASE] = { 0 };
+    int num_read;
+
+    if (argc == 3) { // Input from a file
+	FILE *input_set;
+	input_set = fopen(argv[2], "r");
+	if (input_set == NULL) {
+	   fprintf(stderr, "Error opening file\n");
+	   return 1;
+	}
+
+	while (fscanf(input_set, "%d", &num_read) == 1) {
+	    add_to_tally(num_read, position, digits);
+	}
+
+	if (fclose(input_set) != 0) {
+	   fprintf(stderr, "fclose failed\n");
+	   return 1;
+	}
+    } else { // redirected input
+	while (fscanf(stdin, "%d", &num_read) == 1) {
+	    add_to_tally(num_read, position, digits);
+	}
+    }
+    print_digits(digits);
     return 0;
  }
 
-void print_digits(int *digits) {
-    for (int i = 0; i < sizeof(digits) / sizeof(digits[0]); i++) {
+void print_digits(int *digits) {    
+    for (int i = 0; i < BASE; i++) {
+    	printf("%ds: %d\n", i, digits[i]);
     }
 }
