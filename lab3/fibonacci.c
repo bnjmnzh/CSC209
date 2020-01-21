@@ -14,8 +14,18 @@
  * Pay attention to the expected type of fib's parameters.
  */
 
-/* Write your solution here */
-
+void fib(int **fib_ptr, int n) {
+    *fib_ptr = malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++) {
+	if (i == 0) {
+	    (*fib_ptr)[i] = 0;
+	} else if (i == 1) {
+	    (*fib_ptr)[i] = 1;
+	} else {
+    	    (*fib_ptr)[i] = (*fib_ptr)[i - 1] + (*fib_ptr)[i - 2];
+	}
+    }
+}
 
 int main(int argc, char **argv) {
     /* do not change this main function */
