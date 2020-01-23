@@ -36,9 +36,9 @@ int **split_array(const int *s, int length) {
 
 int *build_array(char **strs, int size) {
     int *array_ptr = malloc(size * sizeof(int));
-    for (int i = 1; i < size; i++) {
+    for (int i = 0; i < size - 1; i++) {
 	int temp = strtol(strs[i], NULL, 10);
-    	array_ptr[i - 1] = temp;
+    	array_ptr[i] = temp;
     }
     return array_ptr;
 }
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
        arguments.  Do not add any additional lines of code to the main
        function or make other changes.
      */
-    int *full_array = build_array(argv, argc);
+    int *full_array = build_array(++argv, argc);
     int **result = split_array(full_array, argc - 1);
 
     printf("Original array:\n");
