@@ -2,13 +2,17 @@
 #include "benford_helpers.h"
 
 int count_digits(int num) {
-    int i = num;
-    int count = 0;
-    while (i != 0) {
-	count++;
-	i = i / BASE;	
+    if (num == 0) {
+        return 1;
+    } else {
+    	int i = num;
+    	int count = 0;
+    	while (i != 0) {
+	    count++;
+	    i = i / BASE;	
+	}
+	return count;
     }
-    return count;
 }
 
 int ipow(int base, int exp) {

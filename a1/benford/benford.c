@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
 	while (fscanf(input_set, "%d", &num_read) == 1) {
 	    add_to_tally(num_read, position, digits);
 	}
+	
 
 	if (fclose(input_set) != 0) {
 	   fprintf(stderr, "fclose failed\n");
@@ -41,6 +42,7 @@ int main(int argc, char **argv) {
 	    add_to_tally(num_read, position, digits);
 	}
     }
+
     print_digits(digits);
     return 0;
  }
