@@ -11,7 +11,16 @@
     if s is the string "function" and n is 3, then truncate() changes s to
     the string "fun" and returns 5.
 */
-
+int truncate(char *s, int n) {
+    
+    int i = strlen(s);
+    if (i <= n) {
+	return 0;
+    } else {
+	s[n] = '\0';
+	return i - n;
+    }
+}
 
 
 int main(int argc, char **argv) {
@@ -26,6 +35,6 @@ int main(int argc, char **argv) {
 
     int soln_val = truncate(target, amt);
     printf("%d %s\n", soln_val, target);
-
+  
     return 0;
 }
