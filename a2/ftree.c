@@ -27,16 +27,21 @@ struct TreeNode *generate_ftree(const char *fname) {
     // of the FTree.  For files at other depths, the path would be the
     // file path from the root to that file.
     
-    char path[50] = "";
+    char path[100] = "";
     struct TreeNode *tree_ptr = ftree_helper(fname, path);
     if (tree_ptr == NULL) {
         return NULL;
     }
+    
     return tree_ptr;
 }
 
 struct TreeNode *ftree_helper(const char *fname, char *path) {
     struct TreeNode* tree_ptr = malloc(sizeof(struct TreeNode));
+    if (tree_ptr == NULL) {
+        fprintf(stderr, "Error calling malloc");
+	return NULL;
+    }
    
     strcat(path, fname);
     struct stat stat_buf; 
@@ -46,20 +51,25 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
     }
 
     tree_ptr->permissions = stat_buf.st_mode & 0777;
-    
-    tree_ptr->fname = (char *)fname;
+
+    int fname_len = strlen(fname);
+    tree_ptr->fname = malloc(fname_len + 1);
+    if (tree_ptr->fname == NULL) {
+        fprintf(stderr, "Error calling malloc");
+	return NULL;
+    }
+    strcpy(tree_ptr->fname, (char *)fname);
+
     tree_ptr->contents = NULL;
     tree_ptr->next = NULL; 
 
     if (S_ISREG(stat_buf.st_mode)) { // Base case
         // Code to execute for regular file
-	printf("encounted regular file %s\n", path);
 	strcpy(&(tree_ptr->type), "-");
     }
 
     else if (S_ISLNK(stat_buf.st_mode)) { // Base case
         // Code to execute for symbolic link 
-	printf("encountered symbolic link %s\n", path);
         strcpy(&(tree_ptr->type), "l");
     }
 
@@ -74,21 +84,36 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
 	}
 	struct dirent *entry_ptr;
 	entry_ptr = readdir(d_ptr);
-	
-	tree_ptr->contents = malloc(sizeof(struct TreeNode *));
-	tree_ptr->next = malloc(sizeof(struct TreeNode *));
-	
-	char temp_path[50];
-	strcpy(temp_path, path);
-	strcat(temp_path, "/");
-	
-	int len = strlen(temp_path);
 
+	strcat(path, "/");
+	int len = strlen(path);
+
+	struct TreeNode *next_ptr;
+	int set_contents = 1;
+	
 	while (entry_ptr != NULL) {
 	    if (entry_ptr->d_name[0] != '.') {
-		tree_ptr->next = ftree_helper(entry_ptr->d_name, temp_path);
-	        temp_path[len] = '\0';
+		if (set_contents == 1) {
+		    tree_ptr->contents = malloc(sizeof(struct TreeNode *));
+		    if (tree_ptr->contents == NULL) {
+		        fprintf(stderr, "Error calling malloc");
+			return NULL;
+		    }
+		    tree_ptr->contents = ftree_helper(entry_ptr->d_name, path);
+		    next_ptr = tree_ptr->contents;
+		    set_contents = 0;
+		} else {
+		    next_ptr->next = malloc(sizeof(struct TreeNode *));
+		    if (next_ptr->next == NULL) {
+		        fprintf(stderr, "Error calling malloc");
+			return NULL;
+		    }
+		    next_ptr->next = ftree_helper(entry_ptr->d_name, path);
+		    next_ptr = next_ptr->next;
+		}
+		path[len] = '\0';
 	    }
+	    
 	    entry_ptr = readdir(d_ptr);
 	}
 
@@ -96,7 +121,9 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
 	    fprintf(stderr, "Error on closing %s\n", path);
 	    return NULL;
 	}
+	path[len - 1] = '\0';
     }
+    
     return tree_ptr;
 }
 
@@ -120,7 +147,20 @@ void print_ftree(struct TreeNode *root) {
     if (root->contents == NULL) { // Regular file or symbolic link
 	printf("%s (%c%o)\n", root->fname, root->type, root->permissions);
     } else {
+	// Print a directory
         printf("===== %s (%c%o) =====\n", root->fname, root->type, root->permissions);
+	
+	struct TreeNode *temp;
+	if (root->contents != NULL) {
+	    temp = root->contents;
+	}
+	depth++;
+	while (temp != NULL) {
+	    print_ftree(temp);
+	    temp = temp->next;
+	}
+	depth--;
+	
     }
 }
 
@@ -131,9 +171,5 @@ void print_ftree(struct TreeNode *root) {
  */
 void deallocate_ftree (struct TreeNode *node) {
    
-   // Your implementation here.
-   if (node->contents != NULL) {
-	return;
-   }
-   free(node);
+    // Your implementation here.
 }
