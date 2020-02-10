@@ -58,7 +58,7 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
         fprintf(stderr, "Error calling malloc");
 	return NULL;
     }
-    strcpy(tree_ptr->fname, (char *)fname);
+    strcpy(tree_ptr->fname, fname);
 
     tree_ptr->contents = NULL;
     tree_ptr->next = NULL; 
@@ -94,20 +94,10 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
 	while (entry_ptr != NULL) {
 	    if (entry_ptr->d_name[0] != '.') {
 		if (set_contents == 1) {
-		    tree_ptr->contents = malloc(sizeof(struct TreeNode *));
-		    if (tree_ptr->contents == NULL) {
-		        fprintf(stderr, "Error calling malloc");
-			return NULL;
-		    }
 		    tree_ptr->contents = ftree_helper(entry_ptr->d_name, path);
 		    next_ptr = tree_ptr->contents;
 		    set_contents = 0;
 		} else {
-		    next_ptr->next = malloc(sizeof(struct TreeNode *));
-		    if (next_ptr->next == NULL) {
-		        fprintf(stderr, "Error calling malloc");
-			return NULL;
-		    }
 		    next_ptr->next = ftree_helper(entry_ptr->d_name, path);
 		    next_ptr = next_ptr->next;
 		}
@@ -170,6 +160,19 @@ void print_ftree(struct TreeNode *root) {
  * 
  */
 void deallocate_ftree (struct TreeNode *node) {
-   
-    // Your implementation here.
+
+    free(node->fname);
+    if (node->type != 'd') {
+	free(node);
+    } else {
+	struct TreeNode *curr_ptr = node->contents;
+	struct TreeNode *prev_ptr = NULL;
+	
+	while (curr_ptr != NULL) {
+	    prev_ptr = curr_ptr;
+	    curr_ptr = curr_ptr->next;
+	    deallocate_ftree(prev_ptr);
+	}
+	free(node);
+    }
 }
