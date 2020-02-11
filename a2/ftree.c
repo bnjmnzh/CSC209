@@ -134,16 +134,15 @@ void print_ftree(struct TreeNode *root) {
     printf("%*s", depth * 2, "");
 
     // Your implementation here.
-    if (root->contents == NULL) { // Regular file or symbolic link
+    if (root->type != 'd') { // Regular file or symbolic link
 	printf("%s (%c%o)\n", root->fname, root->type, root->permissions);
     } else {
 	// Print a directory
         printf("===== %s (%c%o) =====\n", root->fname, root->type, root->permissions);
 	
 	struct TreeNode *temp;
-	if (root->contents != NULL) {
-	    temp = root->contents;
-	}
+	temp = root->contents;
+	
 	depth++;
 	while (temp != NULL) {
 	    print_ftree(temp);
