@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <string.h>
-// Add your system includes here.
 
 #include "ftree.h"
 
@@ -38,7 +37,8 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
         fprintf(stderr, "Error calling malloc");
 	return NULL;
     }
-    // Malloc sufficient space for relative path, fname, /, and null-terminating character
+    // Malloc sufficient space for relative path,
+    //  fname, /, and null-terminating character
     char *relative_path = malloc(strlen(path) + strlen(fname) + 2);
     if (relative_path == NULL) { // Error check malloc
         fprintf(stderr, "Error calling malloc");
@@ -47,8 +47,10 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
     strcat(relative_path, fname);
     struct stat stat_buf; 
 
-    if (lstat(relative_path, &stat_buf) == -1) { // Check if fname points to an actual entry
-    	fprintf(stderr, "The path (%s) does not point to an existing entry!\n", relative_path);
+    // Check if fname points to an existing entry
+    if (lstat(relative_path, &stat_buf) == -1) { 
+        fprintf(stderr, "The path (%s) does not point \
+			to an existing entry!\n", relative_path);
     }
 
     tree_ptr->permissions = stat_buf.st_mode & 0777;
@@ -90,19 +92,23 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
 
 	strcat(relative_path, "/");
 
-	// This recursion uses a tree pointer to keep track of where it is in the contex of the directory children
+	// This recursion uses a tree pointer to keep track of 
+	// where it is in the contex of the directory children
 	struct TreeNode *next_ptr;
-	// set_contents is high when tree_ptr->contents is NULL to indicate that you can set a child pointer
+	// set_contents is high when tree_ptr->contents is 
+	// NULL to indicate that you can set a child pointer
 	int set_contents = 1;
 	
 	while (entry_ptr != NULL) {
 	    if (entry_ptr->d_name[0] != '.') {
 		if (set_contents == 1) {
-		    tree_ptr->contents = ftree_helper(entry_ptr->d_name, relative_path);
+		    tree_ptr->contents = ftree_helper(
+				    entry_ptr->d_name, relative_path);
 		    next_ptr = tree_ptr->contents;
 		    set_contents = 0;
 		} else {
-		    next_ptr->next = ftree_helper(entry_ptr->d_name, relative_path);
+		    next_ptr->next = ftree_helper(
+				    entry_ptr->d_name, relative_path);
 		    next_ptr = next_ptr->next;
 		}
 	    }
@@ -135,20 +141,24 @@ void print_ftree(struct TreeNode *root) {
     static int depth = 0;
     printf("%*s", depth * 2, "");
 
-    if (root->type != 'd') { // Regular file or symbolic link
+    if (root->type != 'd') {
+	// Regular file or symbolic link
 	printf("%s (%c%o)\n", root->fname, root->type, root->permissions);
     } else {
 	// Print a directory
-        printf("===== %s (%c%o) =====\n", root->fname, root->type, root->permissions);
+        printf("===== %s (%c%o) =====\n", root->fname,
+		       	root->type, root->permissions);
 	
 	struct TreeNode *temp;
 	temp = root->contents;
 	
+	// Increment depth for going down a level
 	depth++;
 	while (temp != NULL) {
 	    print_ftree(temp);
 	    temp = temp->next;
 	}
+	// Decrement depth for going up a level
 	depth--;
 	
     }
@@ -161,10 +171,15 @@ void print_ftree(struct TreeNode *root) {
  */
 void deallocate_ftree (struct TreeNode *node) {
     
+    // Free name of node regardless of type of node
     free(node->fname);
-    if (node->type != 'd') {
+    if (node->type != 'd') { 
+	// Base case since regular files and links do not have contents
 	free(node);
     } else {
+	// This recursion uses two pointers, one to the current node 
+	// and one to the previous node to traverse a directorys
+	// children and deallocate memory
 	struct TreeNode *curr_ptr = node->contents;
 	struct TreeNode *prev_ptr = NULL;
 	
