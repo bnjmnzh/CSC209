@@ -19,16 +19,12 @@ struct TreeNode *ftree_helper(const char *fname, char *path);
  */
 struct TreeNode *generate_ftree(const char *fname) {
 
-    // Your implementation here.
+    /* This function makes heavy use of a helper function ftree_helper to do all the work
+     * ftree_helper takes fname and a path to make recursion simpler.
+     */
 
-    // Hint: consider implementing a recursive helper function that
-    // takes fname and a path.  For the initial call on the 
-    // helper function, the path would be "", since fname is the root
-    // of the FTree.  For files at other depths, the path would be the
-    // file path from the root to that file.
-    
-    char path[100] = "";
-    struct TreeNode *tree_ptr = ftree_helper(fname, path);
+    struct TreeNode *tree_ptr = ftree_helper(fname, "");
+    // Error check
     if (tree_ptr == NULL) {
         return NULL;
     }
@@ -38,28 +34,35 @@ struct TreeNode *generate_ftree(const char *fname) {
 
 struct TreeNode *ftree_helper(const char *fname, char *path) {
     struct TreeNode* tree_ptr = malloc(sizeof(struct TreeNode));
-    if (tree_ptr == NULL) {
+    if (tree_ptr == NULL) { // Error check malloc
         fprintf(stderr, "Error calling malloc");
 	return NULL;
     }
-   
-    strcat(path, fname);
+    // Malloc sufficient space for relative path, fname, /, and null-terminating character
+    char *relative_path = malloc(strlen(path) + strlen(fname) + 2);
+    if (relative_path == NULL) { // Error check malloc
+        fprintf(stderr, "Error calling malloc");
+    }
+    strcpy(relative_path, path);
+    strcat(relative_path, fname);
     struct stat stat_buf; 
 
-    if (lstat(path, &stat_buf) == -1) {
-    	fprintf(stderr, "The path (%s) does not point to an existing entry!\n", path);
+    if (lstat(relative_path, &stat_buf) == -1) { // Check if fname points to an actual entry
+    	fprintf(stderr, "The path (%s) does not point to an existing entry!\n", relative_path);
     }
 
     tree_ptr->permissions = stat_buf.st_mode & 0777;
 
+    // Malloc space for fname of file tree
     int fname_len = strlen(fname);
     tree_ptr->fname = malloc(fname_len + 1);
-    if (tree_ptr->fname == NULL) {
+    if (tree_ptr->fname == NULL) { // Error check malloc 
         fprintf(stderr, "Error calling malloc");
 	return NULL;
     }
     strcpy(tree_ptr->fname, fname);
 
+    // Set contents and next to initially NULL
     tree_ptr->contents = NULL;
     tree_ptr->next = NULL; 
 
@@ -77,43 +80,42 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
     	// Code to execute for a directory
 	strcpy(&(tree_ptr->type), "d");
 	
-	DIR *d_ptr = opendir(path);
-	if (d_ptr == NULL) {
-	    fprintf(stderr, "Error on opening %s\n", path);
+	DIR *d_ptr = opendir(relative_path);
+	if (d_ptr == NULL) { // Error check opening directory
+	    fprintf(stderr, "Error on opening %s\n", relative_path);
 	    return NULL;
 	}
 	struct dirent *entry_ptr;
 	entry_ptr = readdir(d_ptr);
 
-	strcat(path, "/");
-	int len = strlen(path);
+	strcat(relative_path, "/");
 
+	// This recursion uses a tree pointer to keep track of where it is in the contex of the directory children
 	struct TreeNode *next_ptr;
+	// set_contents is high when tree_ptr->contents is NULL to indicate that you can set a child pointer
 	int set_contents = 1;
 	
 	while (entry_ptr != NULL) {
 	    if (entry_ptr->d_name[0] != '.') {
 		if (set_contents == 1) {
-		    tree_ptr->contents = ftree_helper(entry_ptr->d_name, path);
+		    tree_ptr->contents = ftree_helper(entry_ptr->d_name, relative_path);
 		    next_ptr = tree_ptr->contents;
 		    set_contents = 0;
 		} else {
-		    next_ptr->next = ftree_helper(entry_ptr->d_name, path);
+		    next_ptr->next = ftree_helper(entry_ptr->d_name, relative_path);
 		    next_ptr = next_ptr->next;
 		}
-		path[len] = '\0';
 	    }
 	    
 	    entry_ptr = readdir(d_ptr);
 	}
 
-	if (closedir(d_ptr) == -1) {
-	    fprintf(stderr, "Error on closing %s\n", path);
+	if (closedir(d_ptr) == -1) { // Error check closing the directory
+	    fprintf(stderr, "Error on closing %s\n", relative_path);
 	    return NULL;
 	}
-	path[len - 1] = '\0';
     }
-    
+    free(relative_path); // Free the space for the relative path
     return tree_ptr;
 }
 
@@ -131,9 +133,8 @@ void print_ftree(struct TreeNode *root) {
     // Here's a trick for remembering what depth (in the tree) you're at
     // and printing 2 * that many spaces at the beginning of the line.
     static int depth = 0;
-    printf("%*s", depth * 2, "");
+//    printf("%*s", depth * 2, "");
 
-    // Your implementation here.
     if (root->type != 'd') { // Regular file or symbolic link
 	printf("%s (%c%o)\n", root->fname, root->type, root->permissions);
     } else {
@@ -159,7 +160,7 @@ void print_ftree(struct TreeNode *root) {
  * 
  */
 void deallocate_ftree (struct TreeNode *node) {
-
+    
     free(node->fname);
     if (node->type != 'd') {
 	free(node);
