@@ -31,17 +31,22 @@ struct TreeNode *generate_ftree(const char *fname) {
     return tree_ptr;
 }
 
+
+/* Helper function for generate_ftree. This function uses a path to keep track
+ * of where it is in the file system.
+ */
 struct TreeNode *ftree_helper(const char *fname, char *path) {
     struct TreeNode* tree_ptr = malloc(sizeof(struct TreeNode));
     if (tree_ptr == NULL) { // Error check malloc
         fprintf(stderr, "Error calling malloc");
-	return NULL;
+	exit(1);
     }
     // Malloc sufficient space for relative path,
     //  fname, /, and null-terminating character
     char *relative_path = malloc(strlen(path) + strlen(fname) + 2);
     if (relative_path == NULL) { // Error check malloc
         fprintf(stderr, "Error calling malloc");
+        exit(1);
     }
     strcpy(relative_path, path);
     strcat(relative_path, fname);
@@ -51,6 +56,7 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
     if (lstat(relative_path, &stat_buf) == -1) { 
         fprintf(stderr, "The path (%s) does not point \
 			to an existing entry!\n", relative_path);
+	return NULL;
     }
 
     tree_ptr->permissions = stat_buf.st_mode & 0777;
@@ -60,7 +66,7 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
     tree_ptr->fname = malloc(fname_len + 1);
     if (tree_ptr->fname == NULL) { // Error check malloc 
         fprintf(stderr, "Error calling malloc");
-	return NULL;
+	exit(1);
     }
     strcpy(tree_ptr->fname, fname);
 
@@ -85,7 +91,7 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
 	DIR *d_ptr = opendir(relative_path);
 	if (d_ptr == NULL) { // Error check opening directory
 	    fprintf(stderr, "Error on opening %s\n", relative_path);
-	    return NULL;
+	    exit(1);
 	}
 	struct dirent *entry_ptr;
 	entry_ptr = readdir(d_ptr);
@@ -118,7 +124,7 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
 
 	if (closedir(d_ptr) == -1) { // Error check closing the directory
 	    fprintf(stderr, "Error on closing %s\n", relative_path);
-	    return NULL;
+	    exit(1);
 	}
     }
     free(relative_path); // Free the space for the relative path
