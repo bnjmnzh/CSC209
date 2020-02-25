@@ -20,10 +20,12 @@ int main(int argc, char **argv) {
         if (n < 0) {
             perror("fork");
             exit(1);
-        } else if (n == 0) { // child process
+        }
+	printf("ppid = %d, pid = %d, i = %d\n", getppid(), getpid(), i);
+        if (n == 0) {
 	    exit(0);
 	}
-    }
+    } 
 
 
     for (i = 0; i < iterations; i++) {
@@ -31,8 +33,6 @@ int main(int argc, char **argv) {
 	int status;
 	if( (pid = wait(&status)) == -1) {
 	    perror("wait");
-	} else {
-	    printf("%d -> %d\n", getpid(), pid);
 	}
     }
 
