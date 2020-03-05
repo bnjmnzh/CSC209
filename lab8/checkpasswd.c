@@ -37,15 +37,6 @@ int main(void) {
       perror("pipe");
       exit(1);
   }
-  int len1 = strlen(user_id);
-  int len2 = strlen(password);
-  int i;
-  for (i = len1 - 1; i < MAXPASSWORD; i++) {
-      user_id[i] = '\0';
-  }
-  for (i = len2 - 1; i < MAXPASSWORD; i++) {
-      password[i] = '\0';
-  }
 
   int r = fork();
 
