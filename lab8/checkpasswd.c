@@ -30,6 +30,15 @@ int main(void) {
       perror("fgets");
       exit(1);
   }
+
+  int i;
+  for (i = strlen(user_id) - 1; i < MAXPASSWORD; i++) {
+      user_id[i] = '\0';
+  }
+
+  for (i = strlen(password) - 1; i < MAXPASSWORD; i++) {
+      password[i] = '\0';
+  }
   
   int fd[2];
 
