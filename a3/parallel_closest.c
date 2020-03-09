@@ -24,7 +24,6 @@
  *         at the start of the program. Parent process is not a worker progress.
  */
 double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
-    printf("%x: %d\n", pcount, *pcount);
     if (n < 4 || pdmax == 0) {
 	// Maximum depth has been reached or <= 3 points is covered by closest_serial
         return closest_serial(p, n); 
@@ -32,8 +31,6 @@ double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
     	int mid = n / 2;
 	struct Point mid_point = p[mid];
 
-	// (p, mid) = first half
-	// (p + mid, n - mid) = second half
 	int left_fd[2];
 	if (pipe(left_fd) == -1) {
 	    perror("pipe");
@@ -49,9 +46,13 @@ double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
 	        perror("close");
 		exit(1);
 	    }
-	    (*pcount)++;
+	    int i = 1;
 	    double left_closest = closest_parallel(p, mid, pdmax - 1, pcount);
 	    if (write(left_fd[1], &left_closest, sizeof(double)) != sizeof(double)) {
+	        perror("write from left child to pipe");
+		exit(1);
+	    }
+	    if (write(left_fd[1], &i, sizeof(int)) != sizeof(int)) {
 	        perror("write from left child to pipe");
 		exit(1);
 	    }
@@ -59,7 +60,6 @@ double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
 	        perror("close");
 		exit(1);
 	    }
-
 	    exit(*pcount);
 	} else {
 	    if (close(left_fd[1]) == -1) {
@@ -83,10 +83,15 @@ double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
 	        perror("close");
 	        exit(1);
 	    }
-	    (*pcount)++;
+	    int i = 1;
+	    
 	    double right_closest = closest_parallel(p + mid, n - mid, pdmax - 1, pcount);
 	    if (write(right_fd[1], &right_closest, sizeof(double)) != sizeof(double)) {
 		perror("write from right child to pipe");
+		exit(1);
+	    }
+	    if (write(right_fd[1], &i, sizeof(int)) != sizeof(int)) {
+	        perror("write from right child to pipe");
 		exit(1);
 	    }
 	    if (close(right_fd[1]) == -1) {
@@ -107,6 +112,15 @@ double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
 	    perror("wait");
 	    exit(1);
 	}
+
+	if ((WIFEXITED(status_left) && (WIFEXITED(status_right)))) {
+	    if ((WEXITSTATUS(status_left) == 1) || (WEXITSTATUS(status_right) == 1)) {
+	        fprintf(stderr, "Child terminated with exit status 1");
+		exit(1);
+	    } else {
+	        (*pcount) += WEXITSTATUS(status_left) + WEXITSTATUS(status_right) + 2;
+	    }
+	}	
 
 	double min_left, min_right;
 	if (read(left_fd[0], &min_left, sizeof(double)) != sizeof(double)) {
