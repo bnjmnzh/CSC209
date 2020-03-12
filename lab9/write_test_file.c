@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#define max_int 100
+
 /* Write random integers (in binary) to a file with the name given by the command-line
  * argument.  This program creates a data file for use by the time_reads program.
  */
@@ -18,12 +20,17 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    // TODO: complete this program according its description above.
+    for (int i = 0; i < 100; i++) {
+	int rand = random() % max_int;
+        if (fwrite(&rand, sizeof(int), 1, fp) != 1) {
+	    perror("write");
+	    exit(1);
+	}
+    }
 
-
-
-
-
-    fclose(fp);
+    if (fclose(fp) != 0) {
+        perror("close");
+	exit(1);
+    }
     return 0;
 }
