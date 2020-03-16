@@ -42,26 +42,25 @@ double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
 	    perror("fork");
 	    exit(1);
 	} else if (left == 0) {
+	    // Close read end in child pipe since child only writes
 	    if (close(left_fd[0]) == -1) {
 	        perror("close");
 		exit(1);
 	    }
-	    int i = 1;
+
 	    double left_closest = closest_parallel(p, mid, pdmax - 1, pcount);
 	    if (write(left_fd[1], &left_closest, sizeof(double)) != sizeof(double)) {
 	        perror("write from left child to pipe");
 		exit(1);
 	    }
-	    if (write(left_fd[1], &i, sizeof(int)) != sizeof(int)) {
-	        perror("write from left child to pipe");
-		exit(1);
-	    }
+
 	    if (close(left_fd[1]) == -1) {
 	        perror("close");
 		exit(1);
 	    }
 	    exit(*pcount);
 	} else {
+	    // Close write end of pipe since parent only reads
 	    if (close(left_fd[1]) == -1) {
 	        perror("close");
 		exit(1);
@@ -79,27 +78,26 @@ double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
 	    perror("fork");
 	    exit(1);
 	} else if (right == 0) {
+	    // Close read end of pipe since child only writes
 	    if (close(right_fd[0]) == -1) {
 	        perror("close");
 	        exit(1);
 	    }
-	    int i = 1;
 	    
 	    double right_closest = closest_parallel(p + mid, n - mid, pdmax - 1, pcount);
 	    if (write(right_fd[1], &right_closest, sizeof(double)) != sizeof(double)) {
 		perror("write from right child to pipe");
 		exit(1);
 	    }
-	    if (write(right_fd[1], &i, sizeof(int)) != sizeof(int)) {
-	        perror("write from right child to pipe");
-		exit(1);
-	    }
+	    
+
 	    if (close(right_fd[1]) == -1) {
 	        perror("close");
 		exit(1);
 	    }
 	    exit(*pcount);
 	} else {
+	    // Close write end of pipe since parent only reads
 	    if (close(right_fd[1]) == -1) {
 	        perror("close");
 		exit(1);
@@ -115,6 +113,7 @@ double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
 
 	if ((WIFEXITED(status_left) && (WIFEXITED(status_right)))) {
 	    if ((WEXITSTATUS(status_left) == 1) || (WEXITSTATUS(status_right) == 1)) {
+		// If any child exits with status 1 then parent also exits with status 1
 	        fprintf(stderr, "Child terminated with exit status 1");
 		exit(1);
 	    } else {
@@ -138,8 +137,9 @@ double closest_parallel(struct Point *p, int n, int pdmax, int *pcount) {
 	}
 
 	double d = min(min_left, min_right);
-	
-	// Build an array strip[] that contains points close (closer than d) to the line passing through the middle point
+
+	// Build an array strip[] that contains points close 
+	// (closer than d) to the line passing through the middle point
 	struct Point *strip = malloc(sizeof(struct Point) * n);
 	if (strip == NULL) {
 	    perror("malloc");

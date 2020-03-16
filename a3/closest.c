@@ -38,6 +38,7 @@ int main(int argc, char **argv) {
 	}
     }
 
+    // There should not be any other command line arguments
     for (int i = optind; i < argc; i++) {
         print_usage();
     }
