@@ -1,5 +1,5 @@
-Script started on 2020-03-16 22:14:24-0400
-wolf:~/Documents/csc209/zhuobenj/lab10$ gdb bufserver
+Script started on 2020-03-19 16:00:13-0400
+wolf:~/Documents/csc209/zhuobenj/lab10$ gdb bufserver
 GNU gdb (Ubuntu 8.1-0ubuntu3.2) 8.1.0.20180409-git
 Copyright (C) 2018 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
@@ -15,33 +15,9 @@ Find the GDB manual and other documentation resources online at:
 For help, type "help".
 Type "apropos word" to search for commands related to "word"...
 Reading symbols from bufserver...done.
-(gdb) list
-4       #include <unistd.h>
-5       #include <arpa/inet.h>
-6       
-7       #include "socket.h"
-8       
-9       #ifndef PORT
-10        #define PORT 30000
-11      #endif
-12      
-13      #define BUFSIZE 30
-(gdb) list
-14      
-15      int find_network_newline(const char *buf, int n);
-16      
-17      
-18      int main() {
-19          // This line causes stdout not to be buffered.
-20          // Don't change this! Necessary for autotesting.
-21          setbuf(stdout, NULL);
-22      
-23          struct sockaddr_in *self = init_server_addr(PORT);
-(gdb) b[Kbreak 18
+(gdb) break [K main
 Breakpoint 1 at 0xce2: file bufserver.c, line 18.
-(gdb) n
-The program is not being run.
-(gdb) run
+(gdb) li[K[Krun[K[K[Ktu[K[Krun
 Starting program: /h/u9/c9/00/zhuobenj/Documents/csc209/zhuobenj/lab10/bufserver 
 
 Breakpoint 1, main () at bufserver.c:18
@@ -56,7 +32,7 @@ Breakpoint 1, main () at bufserver.c:18
 27              int fd = accept_connection(listenfd);
 (gdb) n
 Waiting for a new connection...
-New connection accepted from 127.0.0.1:50000
+New connection accepted from 127.0.0.1:55522
 28              if (fd < 0) {
 (gdb) n
 33              char buf[BUFSIZE] = {'\0'};
@@ -78,25 +54,15 @@ New connection accepted from 127.0.0.1:50000
 59                      printf("Next message: %s\n", buf);
 (gdb) n
 Next message: A stitch in time
-65                      inbuf -= nbytes;
+65                      inbuf -= where;
 (gdb) n
-70                      memmove(buf, buf + where, nbytes - where); 
-(gdb) n
-52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
-(gdb) n
-75                  after = buf + nbytes - where;
-(gdb) n
-76                  room -= where;
-(gdb) n
-39              while ((nbytes = read(fd, after, room)) > 0) {
-(gdb) n
-41                  inbuf += nbytes;
+70                      memmove(buf, buf + where, inbuf); 
 (gdb) n
 52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
 (gdb) n
-75                  after = buf + nbytes - where;
+75                  after = buf + inbuf;
 (gdb) n
-76                  room -= where;
+76                  room = sizeof(buf) - inbuf;
 (gdb) n
 39              while ((nbytes = read(fd, after, room)) > 0) {
 (gdb) n
@@ -109,36 +75,90 @@ Next message: A stitch in time
 59                      printf("Next message: %s\n", buf);
 (gdb) n
 Next message: A stitch in time
-65                      inbuf -= nbytes;
+65                      inbuf -= where;
 (gdb) n
-70                      memmove(buf, buf + where, nbytes - where); 
+70                      memmove(buf, buf + where, inbuf); 
 (gdb) n
-
-Program received signal SIGSEGV, Segmentation fault.
-__memmove_ssse3 () at ../sysdeps/x86_64/multiarch/memcpy-ssse3.S:2830
-2830    ../sysdeps/x86_64/multiarch/memcpy-ssse3.S: No such file or directory.
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
 (gdb) n
-
-Program terminated with signal SIGSEGV, Segmentation fault.
-The program no longer exists.
+75                  after = buf + inbuf;
 (gdb) n
-The program is not being run.
-(gdb) buf[K[K[Kbu[K[Krun
-Starting program: /h/u9/c9/00/zhuobenj/Documents/csc209/zhuobenj/lab10/bufserver 
-
-Breakpoint 1, main () at bufserver.c:18
-18      int main() {
+76                  room = sizeof(buf) - inbuf;
 (gdb) n
-21          setbuf(stdout, NULL);
+39              while ((nbytes = read(fd, after, room)) > 0) {
 (gdb) n
-23          struct sockaddr_in *self = init_server_addr(PORT);
+41                  inbuf += nbytes;
 (gdb) n
-24          int listenfd = set_up_server_socket(self, 5);
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+(gdb) n
+58                      buf[where - 2] = '\0';
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+(gdb) n
+75                  after = buf + inbuf;
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+(gdb) n
+41                  inbuf += nbytes;
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+(gdb) n
+58                      buf[where - 2] = '\0';
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+(gdb) n
+75                  after = buf + inbuf;
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+(gdb) n
+41                  inbuf += nbytes;
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+(gdb) n
+58                      buf[where - 2] = '\0';
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+(gdb) n
+75                  after = buf + inbuf;
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+(gdb) n
+79              close(fd);
 (gdb) n
 27              int fd = accept_connection(listenfd);
 (gdb) n
 Waiting for a new connection...
-New connection accepted from 127.0.0.1:50012
+n
+n
+n
+New connection accepted from 127.0.0.1:55536
 28              if (fd < 0) {
 (gdb) n
 33              char buf[BUFSIZE] = {'\0'};
@@ -158,55 +178,487 @@ New connection accepted from 127.0.0.1:50012
 58                      buf[where - 2] = '\0';
 (gdb) n
 59                      printf("Next message: %s\n", buf);
+(gdb) display  [Kbuf
+1: buf = "A stitch in time\000\nA stitch in "
+(gdb) displa [Ky uin[K[K[Kinbuf
+2: inbuf = 30
 (gdb) n
 Next message: A stitch in time
-65                      inbuf -= nbytes;
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
 (gdb) n
-70                      memmove(buf, buf + where, nbytes - where); 
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
 (gdb) n
 52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
 (gdb) n
-75                  after = buf + nbytes - where;
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
 (gdb) n
-76                  room -= where;
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
 (gdb) n
 39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
 (gdb) n
 41                  inbuf += nbytes;
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 12
 (gdb) n
 52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
-(gdb) n
-75                  after = buf + nbytes - where;
-(gdb) n
-76                  room -= where;
-(gdb) n
-39              while ((nbytes = read(fd, after, room)) > 0) {
-(gdb) n
-41                  inbuf += nbytes;
-(gdb) n
-52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
 (gdb) n
 58                      buf[where - 2] = '\0';
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
 (gdb) n
 59                      printf("Next message: %s\n", buf);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
 (gdb) n
 Next message: A stitch in time
-65                      inbuf -= nbytes;
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
 (gdb) n
-70                      memmove(buf, buf + where, nbytes - where); 
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
 (gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+41                  inbuf += nbytes;
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) n
+58                      buf[where - 2] = '\0';
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+41                  inbuf += nbytes;
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) n
+58                      buf[where - 2] = '\0';
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+41                  inbuf += nbytes;
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 18
+(gdb) n
+58                      buf[where - 2] = '\0';
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 18
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 18
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 18
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+(gdb) n
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+(gdb) n
+79              close(fd);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+(gdb) n
+27              int fd = accept_connection(listenfd);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+(gdb) n
+Waiting for a new connection...
+New connection accepted from 127.0.0.1:55544
+28              if (fd < 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+(gdb) n
+33              char buf[BUFSIZE] = {'\0'};
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+(gdb) n
+34              int inbuf = 0;           // How many bytes currently in buffer?
+1: buf = '\000' <repeats 29 times>
+2: inbuf = 0
+(gdb) n
+35              int room = sizeof(buf);  // How many bytes remaining in buffer?
+1: buf = '\000' <repeats 29 times>
+2: inbuf = 0
+(gdb) n
+36              char *after = buf;       // Pointer to position after the data in buf
+1: buf = '\000' <repeats 29 times>
+2: inbuf = 0
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = '\000' <repeats 29 times>
+2: inbuf = 0
+(gdb) n
+41                  inbuf += nbytes;
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 0
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) n
+58                      buf[where - 2] = '\0';
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+41                  inbuf += nbytes;
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) n
+58                      buf[where - 2] = '\0';
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) nn
+Undefined command: "nn".  Try "help".
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+41                  inbuf += nbytes;
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) n
+58                      buf[where - 2] = '\0';
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+(gdb) n
+41                  inbuf += nbytes;
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 12
+(gdb) display af[K[Kroom
+3: room = 18
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+3: room = 18
+(gdb) n
+58                      buf[where - 2] = '\0';
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 30
+3: room = 18
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+3: room = 18
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 30
+3: room = 18
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+3: room = 18
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+3: room = 18
+(gdb) n
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+3: room = 18
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+3: room = 18
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 12
+3: room = 18
+(gdb) n
+41                  inbuf += nbytes;
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 12
+3: room = 18
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 18
+3: room = 18
+(gdb) n
+58                      buf[where - 2] = '\0';
+1: buf = "A stitch in time\r\nA stitch in "
+2: inbuf = 18
+3: room = 18
+(gdb) n
+59                      printf("Next message: %s\n", buf);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 18
+3: room = 18
+(gdb) n
+Next message: A stitch in time
+65                      inbuf -= where;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 18
+3: room = 18
+(gdb) n
+70                      memmove(buf, buf + where, inbuf); 
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+3: room = 18
+(gdb) n
+52                  while ((where = find_network_newline(buf, inbuf)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+3: room = 18
+(gdb) n
+75                  after = buf + inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+3: room = 18
+(gdb) n
+76                  room = sizeof(buf) - inbuf;
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+3: room = 18
+(gdb) n
+39              while ((nbytes = read(fd, after, room)) > 0) {
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+3: room = 30
+(gdb) n
+79              close(fd);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+3: room = 30
+(gdb) n
+27              int fd = accept_connection(listenfd);
+1: buf = "A stitch in time\000\nA stitch in "
+2: inbuf = 0
+3: room = 30
+(gdb) n
+Waiting for a new connection...
+n
+n
+
+Program received signal SIGINT, Interrupt.
+0x00007ffff7b067e4 in __libc_accept (fd=3, addr=..., len=0x7fffffffe8a8)
+    at ../sysdeps/unix/sysv/linux/accept.c:26
+26      ../sysdeps/unix/sysv/linux/accept.c: No such file or directory.
+(gdb) e[Kquit
+A debugging session is active.
 
-Program received signal SIGSEGV, Segmentation fault.
-__memmove_ssse3 () at ../sysdeps/x86_64/multiarch/memcpy-ssse3.S:2830
-2830    ../sysdeps/x86_64/multiarch/memcpy-ssse3.S: No such file or directory.
-(gdb) n
+        Inferior 1 [process 48226] will be killed.
 
-Program terminated with signal SIGSEGV, Segmentation fault.
-The program no longer exists.
-(gdb) n
-The program is not being run.
-(gdb) quit
+Quit anyway? (y or n) exi[K[K[Ky
 wolf:~/Documents/csc209/zhuobenj/lab10$ exit
 exit
 
-Script done on 2020-03-16 22:17:54-0400
+Script done on 2020-03-19 16:07:22-0400

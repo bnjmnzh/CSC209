@@ -1,5 +1,5 @@
-Script started on 2020-03-16 22:14:19-0400
-wolf:~/Documents/csc209/zhuobenj/lab10$ gdb randclient
+Script started on 2020-03-19 16:00:08-0400
+wolf:~/Documents/csc209/zhuobenj/lab10$ gdb rqand[K[K[K[Kandclient
 GNU gdb (Ubuntu 8.1-0ubuntu3.2) 8.1.0.20180409-git
 Copyright (C) 2018 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
@@ -15,7 +15,7 @@ Find the GDB manual and other documentation resources online at:
 For help, type "help".
 Type "apropos word" to search for commands related to "word"...
 Reading symbols from randclient...done.
-(gdb) s[Klist
+(gdb) list
 10      #ifndef PORT
 11        #define PORT 30000
 12      #endif
@@ -37,22 +37,18 @@ Reading symbols from randclient...done.
 27          }
 28      
 29          int soc = connect_to_server(PORT, argv[1]);
-(gdb) gd[K[Kbreak 23
+(gdb) break 32[K[K23
 Breakpoint 1 at 0xc69: file randclient.c, line 23.
-(gdb) run 127.0.0.1
+(gdb) run 126.[K[K7.0.0.1
 Starting program: /h/u9/c9/00/zhuobenj/Documents/csc209/zhuobenj/lab10/randclient 127.0.0.1
 
-Breakpoint 1, main (argc=2, argv=0x7fffffffea08) at randclient.c:24
+Breakpoint 1, main (argc=2, argv=0x7fffffffea28) at randclient.c:24
 24          if (argc != 2) {
 (gdb) n
 29          int soc = connect_to_server(PORT, argv[1]);
 (gdb) n
 connect: Connection refused
-[Inferior 1 (process 21038) exited with code 01]
-(gdb) n[Kn
-The program is not being run.
-(gdb) n
-The program is not being run.
+[Inferior 1 (process 48206) exited with code 01]
 (gdb) n
 The program is not being run.
 (gdb) n
@@ -60,7 +56,7 @@ The program is not being run.
 (gdb) nrun 127.0.0.1
 Starting program: /h/u9/c9/00/zhuobenj/Documents/csc209/zhuobenj/lab10/randclient 127.0.0.1
 
-Breakpoint 1, main (argc=2, argv=0x7fffffffea08) at randclient.c:24
+Breakpoint 1, main (argc=2, argv=0x7fffffffea28) at randclient.c:24
 24          if (argc != 2) {
 (gdb) n
 29          int soc = connect_to_server(PORT, argv[1]);
@@ -73,20 +69,18 @@ Breakpoint 1, main (argc=2, argv=0x7fffffffea08) at randclient.c:24
 (gdb) n
 35      }
 (gdb) n
-__libc_start_main (main=0x555555554c5a <main>, argc=2, argv=0x7fffffffea08, 
+__libc_start_main (main=0x555555554c5a <main>, argc=2, argv=0x7fffffffea28, 
     init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, 
-    stack_end=0x7fffffffe9f8) at ../csu/libc-start.c:344
+    stack_end=0x7fffffffea18) at ../csu/libc-start.c:344
 344     ../csu/libc-start.c: No such file or directory.
 (gdb) n
-[Inferior 1 (process 21126) exited normally]
+[Inferior 1 (process 48289) exited normally]
 (gdb) n
 The program is not being run.
-(gdb) n
-The program is not being run.
-(gdb) nrun 127.0.0.1[C[C[C[C[C[Cn[Krun 127.0.0.1
+(gdb) nrun 127.0.0.1
 Starting program: /h/u9/c9/00/zhuobenj/Documents/csc209/zhuobenj/lab10/randclient 127.0.0.1
 
-Breakpoint 1, main (argc=2, argv=0x7fffffffea08) at randclient.c:24
+Breakpoint 1, main (argc=2, argv=0x7fffffffea28) at randclient.c:24
 24          if (argc != 2) {
 (gdb) n
 29          int soc = connect_to_server(PORT, argv[1]);
@@ -99,28 +93,16 @@ Breakpoint 1, main (argc=2, argv=0x7fffffffea08) at randclient.c:24
 (gdb) n
 35      }
 (gdb) n
-__libc_start_main (main=0x555555554c5a <main>, argc=2, argv=0x7fffffffea08, 
+__libc_start_main (main=0x555555554c5a <main>, argc=2, argv=0x7fffffffea28, 
     init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, 
-    stack_end=0x7fffffffe9f8) at ../csu/libc-start.c:344
+    stack_end=0x7fffffffea18) at ../csu/libc-start.c:344
 344     ../csu/libc-start.c: No such file or directory.
 (gdb) n
-[Inferior 1 (process 21169) exited normally]
-(gdb) n
-The program is not being run.
-(gdb) nrun 127.0.0.1[C[C[C[C[C[Cn[Krun 127.0.0.1
+[Inferior 1 (process 48390) exited normally]
+(gdb) n[Krun 127.0.0.1
 Starting program: /h/u9/c9/00/zhuobenj/Documents/csc209/zhuobenj/lab10/randclient 127.0.0.1
 
-Breakpoint 1, main (argc=2, argv=0x7fffffffea08) at randclient.c:24
-24          if (argc != 2) {
-(gdb) n
-29          int soc = connect_to_server(PORT, argv[1]);
-(gdb) n
-connect: Connection refused
-[Inferior 1 (process 21221) exited with code 01]
-(gdb) nrun 127.0.0.1[C[C[C[C[C[Cn[Krun 127.0.0.1
-Starting program: /h/u9/c9/00/zhuobenj/Documents/csc209/zhuobenj/lab10/randclient 127.0.0.1
-
-Breakpoint 1, main (argc=2, argv=0x7fffffffea08) at randclient.c:24
+Breakpoint 1, main (argc=2, argv=0x7fffffffea28) at randclient.c:24
 24          if (argc != 2) {
 (gdb) n
 29          int soc = connect_to_server(PORT, argv[1]);
@@ -128,13 +110,21 @@ Breakpoint 1, main (argc=2, argv=0x7fffffffea08) at randclient.c:24
 31          write_random_pieces(soc, MESSAGE, TIMES);
 (gdb) n
 33          close(soc);
-(gdb) quit
-A debugging session is active.
-
-        Inferior 1 [process 21255] will be killed.
-
-Quit anyway? (y or n) Y
-wolf:~/Documents/csc209/zhuobenj/lab10$ git [K[K[K[Kexit
+(gdb) n
+34          return 0;
+(gdb) n
+35      }
+(gdb) n
+__libc_start_main (main=0x555555554c5a <main>, argc=2, argv=0x7fffffffea28, 
+    init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, 
+    stack_end=0x7fffffffea18) at ../csu/libc-start.c:344
+344     ../csu/libc-start.c: No such file or directory.
+(gdb) n
+[Inferior 1 (process 48491) exited normally]
+(gdb) n
+The program is not being run.
+(gdb) n[Kquit
+wolf:~/Documents/csc209/zhuobenj/lab10$ y[Kexit
 exit
 
-Script done on 2020-03-16 22:18:09-0400
+Script done on 2020-03-19 16:07:17-0400
