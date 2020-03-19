@@ -1,5 +1,5 @@
-Script started on 2020-03-19 15:58:23-0400
-wolf:~/Documents/csc209/zhuobenj/lab10$ gdb u[Kbuv[Kfserver
+Script started on 2020-03-19 16:08:48-0400
+wolf:~/Documents/csc209/zhuobenj/lab10$ gdb bufserver
 GNU gdb (Ubuntu 8.1-0ubuntu3.2) 8.1.0.20180409-git
 Copyright (C) 2018 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
@@ -15,11 +15,12 @@ Find the GDB manual and other documentation resources online at:
 For help, type "help".
 Type "apropos word" to search for commands related to "word"...
 Reading symbols from bufserver...done.
-(gdb) break set_up_socket[K[K[K[K[K[Ke[Kserver_socket
+(gdb) break set_up_server_socket
 Breakpoint 1 at 0xf14: file socket.c, line 35.
-(gdb) run
+(gdb) n[Krun
 Starting program: /h/u9/c9/00/zhuobenj/Documents/csc209/zhuobenj/lab10/bufserver 
 n
+
 Breakpoint 1, set_up_server_socket (self=0x555555757260, num_queue=5) at socket.c:35
 35      int set_up_server_socket(struct sockaddr_in *self, int num_queue) {
 (gdb) n
@@ -30,13 +31,13 @@ Breakpoint 1, set_up_server_socket (self=0x555555757260, num_queue=5) at socket.
 44          int on = 1;
 (gdb) n
 45          int status = setsockopt(soc, SOL_SOCKET, SO_REUSEADDR,
-(gdb) 
+(gdb) n
 47          if (status < 0) {
 (gdb) n
 53          if (bind(soc, (struct sockaddr *)self, sizeof(*self)) < 0) {
 (gdb) n
 60          if (listen(soc, num_queue) < 0) {
-(gdb) n
+(gdb) n[Kn
 66          return soc;
 (gdb) n
 67      }
@@ -45,7 +46,7 @@ main () at bufserver.c:27
 27              int fd = accept_connection(listenfd);
 (gdb) n
 Waiting for a new connection...
-New connection accepted from 127.0.0.1:55434
+New connection accepted from 127.0.0.1:55586
 28              if (fd < 0) {
 (gdb) n
 33              char buf[BUFSIZE] = {'\0'};
@@ -170,20 +171,18 @@ Next message: A stitch in time
 Waiting for a new connection...
 n
 n
-n
-n
-
+q
 Program received signal SIGINT, Interrupt.
 0x00007ffff7b067e4 in __libc_accept (fd=3, addr=..., len=0x7fffffffe8a8)
     at ../sysdeps/unix/sysv/linux/accept.c:26
 26      ../sysdeps/unix/sysv/linux/accept.c: No such file or directory.
-(gdb) ex[K[Kquit
+(gdb) quit
 A debugging session is active.
 
-        Inferior 1 [process 47401] will be killed.
+        Inferior 1 [process 50216] will be killed.
 
-Quit anyway? (y or n) exit[K[K[K[Ky
+Quit anyway? (y or n) y
 wolf:~/Documents/csc209/zhuobenj/lab10$ exit
 exit
 
-Script done on 2020-03-19 15:59:39-0400
+Script done on 2020-03-19 16:09:56-0400
