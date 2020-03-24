@@ -67,11 +67,35 @@ int read_from(int client_index, struct sockname *usernames) {
 
     int num_read = read(fd, &buf, BUF_SIZE);
     buf[num_read] = '\0'; 
-    if (num_read == 0 || write(fd, buf, strlen(buf)) != strlen(buf)) {
-        usernames[client_index].sock_fd = -1;
-        return fd;
+    if (num_read == 0) {
+        if (usernames[client_index].username != NULL) {
+	    free(usernames[client_index].username);
+	    usernames[client_index].sock_fd = -1;
+	    return fd;
+	}
     }
 
+    if (usernames[client_index].username == NULL) {
+        usernames[client_index].username = malloc(num_read);
+	if (usernames[client_index].username == NULL) {
+	    perror("malloc");
+	    exit(1);
+	}
+	strncpy(usernames[client_index].username, buf, strlen(buf));
+
+    } else {
+	char msg[BUF_SIZE];
+	strncpy(msg, usernames[client_index].username, strlen(usernames[client_index].username) - 1);
+	strcat(msg, ": ");
+	strncat(msg, buf, strlen(buf));
+
+	if (write(fd, msg, strlen(msg)) != strlen(msg)) {
+	free(usernames[client_index].username);
+        usernames[client_index].sock_fd = -1;
+        return fd;
+        }
+    }
+    
     return 0;
 }
 
