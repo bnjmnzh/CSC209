@@ -66,7 +66,6 @@ int read_from(int client_index, struct sockname *usernames) {
      */
 
     int num_read = read(fd, &buf, BUF_SIZE);
-    buf[num_read] = '\0'; 
     if (num_read == 0) {
         if (usernames[client_index].username != NULL) {
 	    free(usernames[client_index].username);
@@ -74,28 +73,28 @@ int read_from(int client_index, struct sockname *usernames) {
 	    return fd;
 	}
     }
-
+    buf[num_read] = '\0';
     if (usernames[client_index].username == NULL) {
         usernames[client_index].username = malloc(num_read);
 	if (usernames[client_index].username == NULL) {
 	    perror("malloc");
 	    exit(1);
 	}
-	strncpy(usernames[client_index].username, buf, strlen(buf));
+	strncpy(usernames[client_index].username, buf, num_read - 1);
 
     } else {
 	char msg[BUF_SIZE];
-	strncpy(msg, usernames[client_index].username, strlen(usernames[client_index].username) - 1);
+	strcpy(msg, usernames[client_index].username);
 	strcat(msg, ": ");
 	strncat(msg, buf, strlen(buf));
-
-	if (write(fd, msg, strlen(msg)) != strlen(msg)) {
-	free(usernames[client_index].username);
-        usernames[client_index].sock_fd = -1;
-        return fd;
-        }
+	for (int i = 0; i < MAX_CONNECTIONS; i++) {
+	    if (usernames[i].sock_fd != -1) {
+	        if (write(usernames[i].sock_fd, msg, strlen(msg)) != strlen(msg)) {
+		    usernames[client_index].sock_fd = -1;
+		}
+	    }
+	}
     }
-    
     return 0;
 }
 
