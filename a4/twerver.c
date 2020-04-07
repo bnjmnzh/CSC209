@@ -198,15 +198,14 @@ int main (int argc, char **argv) {
 				    if (write(p->fd, invalid, strlen(invalid)) == -1) {
 				        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
 					remove_client(&new_clients, p->fd);
-					continue;
+					break;
 				    }
 				    char *greeting = WELCOME_MSG;
 				    if (write(p->fd, greeting, strlen(greeting)) == -1) {
 				        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
 				        remove_client(&new_clients, p->fd);
-					continue;
 				    }
-				    continue;
+				    break;
 				}	
 
 			        if (validate_username(input, active_clients) == 0) {
@@ -228,13 +227,13 @@ int main (int argc, char **argv) {
                                     if (write(p->fd, error_message, strlen(error_message)) == -1) {
                                         fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
 			                remove_client(&new_clients, p->fd);
-					continue;
+					break;
 				    }
                                     char *greeting = WELCOME_MSG;
                                     if (write(p->fd, greeting, strlen(greeting)) == -1) {
                                         fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
                                         remove_client(&new_clients, p->fd);
-					continue;
+					break;
 				    }
 			        }
                             }
@@ -263,14 +262,13 @@ int main (int argc, char **argv) {
 				        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
 					remove_client(&active_clients, p->fd);
 					make_announcement(&active_clients, goodbye);
-					continue;
 				    }
 				    break;
 				} else if (verify == 0) {
 				    free(input);
+				    // Clients wants to quit
 				    remove_client(&active_clients, p->fd);
 				    make_announcement(&active_clients, goodbye);
-				    // Client wants to quit
 				    break;
 
 				} else if (verify == 2) {
@@ -295,7 +293,6 @@ int main (int argc, char **argv) {
 					        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
 					        remove_client(&active_clients, p->fd);
 						make_announcement(&active_clients, goodbye);
-						continue;
 					    }
 					} else {
 					    follow(&active_clients, p, to_follow);
@@ -311,7 +308,6 @@ int main (int argc, char **argv) {
 					        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
 					        remove_client(&new_clients, p->fd);
 						make_announcement(&active_clients, goodbye);
-						continue;
 					    }
 					} else {
 					    unfollow(&active_clients, p, to_unfollow);
@@ -429,7 +425,7 @@ void announce(struct client **clients_list, struct client *active_clients[], cha
 			    fprintf(stderr, "fprintf error\n");
 			}
 	            fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(active_clients[i]->ipaddr));
-		        remove_client(clients_list, active_clients[i]->fd);
+		    	remove_client(clients_list, active_clients[i]->fd);
 			make_announcement(clients_list, announcement);
 	        }
 	    }
@@ -449,8 +445,13 @@ void make_announcement(struct client **active_clients, char *s) {
 		    fprintf(stderr, "fprintf error\n");
 		}
 	        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(curr->ipaddr));
-	        remove_client(active_clients, curr->fd);
+	        // Since we are removing the client, need to keep a pointer to the next client
+		// for our loop to continue operating
+		struct client next_ptr;
+		next_ptr.next = curr->next;
+		remove_client(active_clients, curr->fd);
 		make_announcement(active_clients, announcement);
+		curr = &next_ptr;
 	    }
     }
 }
