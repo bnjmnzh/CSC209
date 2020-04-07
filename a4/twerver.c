@@ -92,152 +92,6 @@ struct client * find_user(struct client *active_clients, char *username);
 // from allset when a write to a socket fails. 
 fd_set allset;
 
-/* 
- * Create a new client, initialize it, and add it to the head of the linked
- * list.
- */
-void add_client(struct client **clients, int fd, struct in_addr addr) {
-    struct client *p = malloc(sizeof(struct client));
-    if (!p) {
-        perror("malloc");
-        exit(1);
-    }
-
-    printf("Adding client %s\n", inet_ntoa(addr));
-    p->fd = fd;
-    p->ipaddr = addr;
-    p->username[0] = '\0';
-    p->in_ptr = p->inbuf;
-    p->inbuf[0] = '\0';
-    p->next = *clients;
-
-    // initialize messages to empty strings
-    for (int i = 0; i < MSG_LIMIT; i++) {
-        p->message[i][0] = '\0';
-    }
-
-    // Initialize followers and following to NULL
-    for (int i = 0; i < FOLLOW_LIMIT; i++) {
-        p->followers[i] = NULL;
-	p->following[i] = NULL;
-    }
-
-    *clients = p;
-}
-
-/* 
- * Remove client from the linked list and close its socket.
- * Also, remove socket descriptor from allset.
- */
-void remove_client(struct client **clients, int fd) {
-    struct client *curr = *clients;
-    struct client *prev = NULL;
-    // Find the previous node in the clients list to remove the node we want
-    for (; curr != NULL && curr->fd != fd; curr = curr->next) {
-        prev = curr;
-    }
-
-    if (curr != NULL) {
-	struct client *temp;
-	if (prev != NULL) { // curr is not the start of the list
-	     temp = prev->next;
-	     prev->next = temp->next;
-	} else { // Prev is null so curr is the start of the list
-	     *clients = curr->next;
-	     temp = curr;
-	}
-	// Remove the client from other client's follower/following list
-	for (int i = 0; i < FOLLOW_LIMIT; i++) {
-	    if (temp->following[i] != NULL) {
-	         for (int j = 0; j < FOLLOW_LIMIT; j++) {
-		      if (temp->following[i]->followers[j] != NULL && temp->following[i]->followers[j]->fd == fd) {
-		           temp->following[i]->followers[j] = NULL;
-		      }
-		 }	 
-	    }
-	}
-	for (int i = 0; i < FOLLOW_LIMIT; i++) {
-	     if (temp->followers[i] != NULL) {
-	          for (int j = 0; j < FOLLOW_LIMIT; j++) {
-		      if (temp->followers[i]->following[i] != NULL && temp->followers[i]->following[j]->fd == fd) {
-		          temp->followers[i]->following[j] = NULL;
-		      }
-		  }
-	     }
-	}
-	char announcement[12 + strlen(temp->username)];
-	if (sprintf(announcement, "Good bye %s\r\n", temp->username) < 0) {
-	    fprintf(stderr, "fprintf error\n");
-	}
-	printf("Good bye %s\n", temp->username);
-	make_announcement(clients, announcement);
-	printf("Removing client %d %s\n", fd, inet_ntoa(temp->ipaddr));
-	FD_CLR(fd, &allset);
-	close(temp->fd);
-	free(temp);
-    } else {
-        fprintf(stderr, "Trying to remove fd %d, but I don't know about it\n", fd);
-    }
-}
-
-// Send the message in s to all clients in active_clients.
-// Assuming S is already terminated by \r\n
-// This function takes a list in as argument
-void announce(struct client **clients_list, struct client *active_clients[], char *s) {
-    for (int i = 0; i < FOLLOW_LIMIT; i++) {
-        if (active_clients[i] != NULL) {
-	    if (write(active_clients[i]->fd, s, strlen(s)) == -1) {
-	        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(active_clients[i]->ipaddr));
-		remove_client(clients_list, active_clients[i]->fd);
-	    }
-	}
-    }
-}
-
-
-// Send message in s to all clients in active_clients 
-// Assuming s is already terminated by \r\n
-// This function takes a linked list in as argument
-void make_announcement(struct client **active_clients, char *s) {
-    struct client *curr;
-    for (curr = *active_clients; curr; curr = curr->next) {
-        if (write(curr->fd, s, strlen(s)) == -1) {
-	   fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(curr->ipaddr));
-	   remove_client(active_clients, curr->fd);
-	}
-    }
-}
-
-// Move client c from new_clients list to active_clients list
-void activate_client(struct client *c,
-	struct client **active_clients_ptr, struct client **new_clients_ptr) {
-
-    struct client *curr = *new_clients_ptr;
-    struct client *prev = NULL;
-    // Find the previous node in the new_clients list to remove the node
-    for (; curr != NULL && curr->fd != c->fd; curr = curr->next) {
-	prev = curr;
-    }
-    // p points to front of the linked list or the previous node of the one 
-    if (curr != NULL) {
-        if (prev != NULL) { // Curr is not the start of the list
-	    struct client *temp;
-	    temp = prev->next;
-	    prev->next = temp->next;
-	    temp->next = *active_clients_ptr;
-	    *active_clients_ptr = temp;
-	} else { // Curr is the start of the list
-	    *new_clients_ptr = curr->next;
-	    curr->next = *active_clients_ptr;
-	    *active_clients_ptr = curr;
-	}	    
-	printf("%s has joined. \n", (*active_clients_ptr)->username);
-    } else {
-	    fprintf(stderr, "Trying to find fd %d, but I can't find it\n", c->fd);
-    }
-}
-
-
 int main (int argc, char **argv) {
     int clientfd, maxfd, nready;
     struct client *p;
@@ -457,6 +311,8 @@ int main (int argc, char **argv) {
 				    default:
 					printf("Something is wrong and you are probably wondering what. Well I don't know either\n");
 				}
+			    } else {
+				    break;
 			    }
                         }
                     }
@@ -466,6 +322,152 @@ int main (int argc, char **argv) {
     }	
     return 0;
 }
+
+/* 
+ * Create a new client, initialize it, and add it to the head of the linked
+ * list.
+ */
+void add_client(struct client **clients, int fd, struct in_addr addr) {
+    struct client *p = malloc(sizeof(struct client));
+    if (!p) {
+        perror("malloc");
+        exit(1);
+    }
+
+    printf("Adding client %s\n", inet_ntoa(addr));
+    p->fd = fd;
+    p->ipaddr = addr;
+    p->username[0] = '\0';
+    p->in_ptr = p->inbuf;
+    p->inbuf[0] = '\0';
+    p->next = *clients;
+
+    // initialize messages to empty strings
+    for (int i = 0; i < MSG_LIMIT; i++) {
+        p->message[i][0] = '\0';
+    }
+
+    // Initialize followers and following to NULL
+    for (int i = 0; i < FOLLOW_LIMIT; i++) {
+        p->followers[i] = NULL;
+	    p->following[i] = NULL;
+    }
+
+    *clients = p;
+}
+
+/* 
+ * Remove client from the linked list and close its socket.
+ * Also, remove socket descriptor from allset.
+ */
+void remove_client(struct client **clients, int fd) {
+    struct client *curr = *clients;
+    struct client *prev = NULL;
+    // Find the previous node in the clients list to remove the node we want
+    for (; curr != NULL && curr->fd != fd; curr = curr->next) {
+        prev = curr;
+    }
+
+    if (curr != NULL) {
+	    struct client *temp;
+	    if (prev != NULL) { // curr is not the start of the list
+	        temp = prev->next;
+	        prev->next = temp->next;
+	    } else { // Prev is null so curr is the start of the list
+	        *clients = curr->next;
+	        temp = curr;
+        }
+        // Remove the client from other client's follower/following list
+        for (int i = 0; i < FOLLOW_LIMIT; i++) {
+            if (temp->following[i] != NULL) {
+                for (int j = 0; j < FOLLOW_LIMIT; j++) {
+                    if (temp->following[i]->followers[j] != NULL && temp->following[i]->followers[j]->fd == fd) {
+                        temp->following[i]->followers[j] = NULL;
+                    }
+                }	 
+            }
+        }
+        for (int i = 0; i < FOLLOW_LIMIT; i++) {
+            if (temp->followers[i] != NULL) {
+                for (int j = 0; j < FOLLOW_LIMIT; j++) {
+                    if (temp->followers[i]->following[i] != NULL && temp->followers[i]->following[j]->fd == fd) {
+                        temp->followers[i]->following[j] = NULL;
+                    }
+                }
+            }
+        }
+        char announcement[12 + strlen(temp->username)];
+        if (sprintf(announcement, "Good bye %s\r\n", temp->username) < 0) {
+            fprintf(stderr, "fprintf error\n");
+        }
+        printf("Good bye %s\n", temp->username);
+        make_announcement(clients, announcement);
+        printf("Removing client %d %s\n", fd, inet_ntoa(temp->ipaddr));
+        FD_CLR(fd, &allset);
+        close(temp->fd);
+        free(temp);
+    } else {
+        fprintf(stderr, "Trying to remove fd %d, but I don't know about it\n", fd);
+    }
+}
+
+// Send the message in s to all clients in active_clients.
+// Assuming S is already terminated by \r\n
+// This function takes a list in as argument
+void announce(struct client **clients_list, struct client *active_clients[], char *s) {
+    for (int i = 0; i < FOLLOW_LIMIT; i++) {
+        if (active_clients[i] != NULL) {
+	        if (write(active_clients[i]->fd, s, strlen(s)) == -1) {
+	            fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(active_clients[i]->ipaddr));
+		        remove_client(clients_list, active_clients[i]->fd);
+	        }
+	    }
+    }
+}
+
+
+// Send message in s to all clients in active_clients 
+// Assuming s is already terminated by \r\n
+// This function takes a linked list in as argument
+void make_announcement(struct client **active_clients, char *s) {
+    struct client *curr;
+    for (curr = *active_clients; curr; curr = curr->next) {
+        if (write(curr->fd, s, strlen(s)) == -1) {
+	        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(curr->ipaddr));
+	        remove_client(active_clients, curr->fd);
+	    }
+    }
+}
+
+// Move client c from new_clients list to active_clients list
+void activate_client(struct client *c,
+	struct client **active_clients_ptr, struct client **new_clients_ptr) {
+
+    struct client *curr = *new_clients_ptr;
+    struct client *prev = NULL;
+    // Find the previous node in the new_clients list to remove the node
+    for (; curr != NULL && curr->fd != c->fd; curr = curr->next) {
+	    prev = curr;
+    }
+    // p points to front of the linked list or the previous node of the one 
+    if (curr != NULL) {
+        if (prev != NULL) { // Curr is not the start of the list
+            struct client *temp;
+            temp = prev->next;
+            prev->next = temp->next;
+            temp->next = *active_clients_ptr;
+            *active_clients_ptr = temp;
+        } else { // Curr is the start of the list
+            *new_clients_ptr = curr->next;
+            curr->next = *active_clients_ptr;
+            *active_clients_ptr = curr;
+        }	    
+	    printf("%s has joined. \n", (*active_clients_ptr)->username);
+    } else {
+	    fprintf(stderr, "Trying to find fd %d, but I can't find it\n", c->fd);
+    }
+}
+
 
 /*
  * Search the first n characters of buf for a network newline (\r\n)
@@ -488,46 +490,34 @@ int find_network_newline(const char *buf, int n) {
 char * read_from_client(struct client **clients_list, struct client *client_ptr) {
     int inbuf = 0;
     int room = sizeof(client_ptr->inbuf);
-    client_ptr->in_ptr = client_ptr->inbuf;
     int nbytes = 0;
     char *message = NULL;
  
-    if ((nbytes = read(client_ptr->fd, client_ptr->in_ptr, room)) == -1) {
+    if ((nbytes = read(client_ptr->fd, client_ptr->in_ptr, room)) == 0) {
         fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client_ptr->ipaddr));
 	remove_client(clients_list, client_ptr->fd);
 	return message;
+    } else if (nbytes == -1) {
+	perror("write");
+	exit(1);
     } else if (nbytes > 0) {
-    // while ((nbytes = read(client_ptr->fd, client_ptr->in_ptr, room)) > 0) {
         printf("[%d] Read %d bytes\n", client_ptr->fd, nbytes);
         inbuf += nbytes;
         int where;
-        int found = 0;
 
-        while ((where = find_network_newline(client_ptr->inbuf, inbuf)) > 0) {
-            client_ptr->inbuf[where - 2] = '\0';
-            printf("[%d] Found network newline %s\n", client_ptr->fd, client_ptr->inbuf);
-
-            int len = strlen(client_ptr->inbuf);
-            message = malloc(len + 1);
-            strncpy(message, client_ptr->inbuf, len);
-            message[len] = '\0';
-            found = 1;
-            inbuf -= where;
-            memmove(client_ptr->inbuf, client_ptr->inbuf + where, inbuf);
-        }
-
-        client_ptr->in_ptr = client_ptr->inbuf + inbuf;
-        room = sizeof(client_ptr->inbuf) - inbuf;
-        if (found == 1) {
-            return message;
-        }
-    }
-    if (nbytes == 0) {
-        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client_ptr->ipaddr));
-	remove_client(clients_list, client_ptr->fd);
-    } else if (nbytes == -1) {
-        perror("write");
-	exit(1);
+	where = find_network_newline(client_ptr->inbuf, inbuf);
+	if (where == -1) {
+		client_ptr->in_ptr = client_ptr->in_ptr + inbuf;
+		return message;
+	}
+	client_ptr->inbuf[where - 2] = '\0';
+	printf("[%d] Found network newline %s\n", client_ptr->fd, client_ptr->inbuf);
+	int len = strlen(client_ptr->inbuf);
+	message = malloc(len + 1);
+	strncpy(message, client_ptr->inbuf, len);
+	message[len] = '\0';
+        client_ptr->in_ptr = client_ptr->inbuf;
+	return message;
     }
     return message;
 }
@@ -543,8 +533,8 @@ int validate_username(char *input, struct client *active_clients) {
     struct client *curr;
     for (curr = active_clients; curr != NULL; curr = curr->next) {
         if (strcmp(curr->username, input) == 0) {
-	    return 1;
-	}
+	        return 1;
+	    }
     }
     return 0;
 }
@@ -566,31 +556,31 @@ int verify_input(char *input) {
     char *space = strchr(input, ' ');
     if (space == NULL) { // Command is either show, quit or invalid command
         if (strcmp(input, "quit") == 0) {
-	    return 0;
-	} else if (strcmp(input, SHOW_MSG) == 0) {
-	    return 2;
-	} else {
-	    return -1;
-	}
+	        return 0;
+	    } else if (strcmp(input, SHOW_MSG) == 0) {
+	        return 2;
+	    } else {
+	        return -1;
+	    }
     } else {
 	// Isolate part of string before the space
         char before[BUF_SIZE];
-	int command_len = strlen(input);
-	int rest_len = strlen(space);
-	strncpy(before, input, command_len - rest_len);
-	before[command_len - rest_len] = '\0';
-	// Check if command is send, follow, unfollow, show
- 	if (strcmp(before, SEND_MSG) == 0) {
-	    return 1;
-	} else if (strcmp(before, FOLLOW_MSG) == 0) {
-	    return 3;
-	} else if (strcmp(before, UNFOLLOW_MSG) == 0) {
-	    return 4;
-	} else {
-	    return -1;
-	}
+	    int command_len = strlen(input);
+	    int rest_len = strlen(space);
+	    strncpy(before, input, command_len - rest_len);
+	    before[command_len - rest_len] = '\0';
+	    // Check if command is send, follow, unfollow, show
+ 	    if (strcmp(before, SEND_MSG) == 0) {
+	        return 1;
+	    } else if (strcmp(before, FOLLOW_MSG) == 0) {
+	        return 3;
+	    } else if (strcmp(before, UNFOLLOW_MSG) == 0) {
+	        return 4;
+	    } else {
+	        return -1;
+	    }
 	// Should never get here
-	return -1;
+	    return -1;
     }
 }
 
@@ -599,8 +589,8 @@ struct client * find_user(struct client *active_clients, char *username) {
     struct client *curr;
     for (curr = active_clients; curr != NULL; curr = curr->next) {
         if (strcmp(curr->username, username) == 0) {
-	    return curr;
-	}
+	        return curr;
+	    }
     }
     return NULL;
 }
@@ -614,52 +604,52 @@ void follow(struct client **clients_list, struct client *client, struct client *
     int to_follow_followers = 0;
     for (int i = 0; i < FOLLOW_LIMIT; i++) {
         if (client->following[i] != NULL) {
-	    client_following++;
-	}
-	if (to_follow->followers[i] != NULL) {
-	    to_follow_followers++;
-	}
+	        client_following++;
+	    }
+	    if (to_follow->followers[i] != NULL) {
+	        to_follow_followers++;
+	    }
     }
 
     if (client_following == FOLLOW_LIMIT) {
-	char error[BUF_SIZE];
-	if (sprintf(error, "You are following %d users, but you can follow up to %d users.\r\n", 
-				client_following, FOLLOW_LIMIT) < 0) {
-	    fprintf(stderr, "sprintf error\n");
-	}
+	    char error[BUF_SIZE];
+	    if (sprintf(error, "You are following %d users, but you can follow up to %d users.\r\n", 
+            client_following, FOLLOW_LIMIT) < 0) {
+	        fprintf(stderr, "sprintf error\n");
+	    }
         if (write(client->fd, error, strlen(error)) == -1) {
-	    fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client->ipaddr));    
-	    remove_client(clients_list, client->fd);
-	}
-	return;
+	        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client->ipaddr));    
+	        remove_client(clients_list, client->fd);
+	    }
+	    return;
     }
     
     if (to_follow_followers == FOLLOW_LIMIT) {
         char error[BUF_SIZE];
-	if (sprintf(error, "This user has too many followers. You can have up to %d followers.\r\n", FOLLOW_LIMIT) < 0) {
-	    fprintf(stderr, "sprintf error\n");
-	}
-	if (write(client->fd, error, strlen(error)) == -1) {
-	    fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client->ipaddr));
-	    remove_client(clients_list, client->fd);	    
-	}
-	return;
+	    if (sprintf(error, "This user has too many followers. You can have up to %d followers.\r\n", FOLLOW_LIMIT) < 0) {
+	        fprintf(stderr, "sprintf error\n");
+	    }
+	    if (write(client->fd, error, strlen(error)) == -1) {
+	        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client->ipaddr));
+	        remove_client(clients_list, client->fd);	    
+	    }
+	    return;
     }
     
     // Add to_Follow to client's following list
     int i;
     for (i = 0; i < FOLLOW_LIMIT; i++) {
         if (client->following[i] == NULL) {
-	    break;
-	}
+	        break;
+	    }
     }
     client->following[i] = to_follow;
 
     // Add client to to_follow's follower list
     for (i = 0; i < FOLLOW_LIMIT; i++) {
         if (to_follow->followers[i] == NULL) {
-	    break;
-	}
+	        break;
+	    }
     }
     to_follow->followers[i] = client;
 
@@ -672,18 +662,18 @@ void follow(struct client **clients_list, struct client *client, struct client *
         fprintf(stderr, "fprintf error\n");
     }
     if (write(client->fd, following, strlen(following)) == -1) {
-	fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client->ipaddr));
-	remove_client(clients_list, client->fd);
-	return;
+	    fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client->ipaddr));
+	    remove_client(clients_list, client->fd);
+	    return;
     }
     char follower[20 + strlen(client->username)];
     if (sprintf(follower, "%s has followed you!\r\n", client->username) < 0) {
         fprintf(stderr, "fprintf error\n");
     }
     if (write(to_follow->fd, follower, strlen(follower)) == -1) {
-	fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(to_follow->ipaddr));
-	remove_client(clients_list, to_follow->fd);
-	return;
+	    fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(to_follow->ipaddr));
+	    remove_client(clients_list, to_follow->fd);
+	    return;
     }
 }
 
@@ -694,25 +684,25 @@ void unfollow(struct client **clients_list, struct client *client, struct client
     int i;
     // Remove follower from client's following list
     for (i = 0; i < FOLLOW_LIMIT; i++) {
-	if (client->following[i] != NULL) {
+	    if (client->following[i] != NULL) {
             if (client->following[i]->fd == to_unfollow->fd) {
-	        break;
+	            break;
+	        }
 	    }
-	}
     }
 
     // Either we found the one we wanted, or i = FOLLOW_LIMIT
     // If i = follow_limit, then that means the client is not following to_unfollow
     if (i == FOLLOW_LIMIT) {
         char error[strlen(to_unfollow->username) + 25];
-	if (sprintf(error, "You are not following %s!\r\n", to_unfollow->username) < 0) {
-	    fprintf(stderr, "sprintf error\n");
-	}
-	if (write(client->fd, error, strlen(error)) == -1)  {
-	    fprintf(stderr, "Write to client %s failed\n", inet_ntoa(client->ipaddr));
-	    remove_client(clients_list, client->fd);
-	}
-	return;
+	    if (sprintf(error, "You are not following %s!\r\n", to_unfollow->username) < 0) {
+	        fprintf(stderr, "sprintf error\n");
+	    }
+        if (write(client->fd, error, strlen(error)) == -1)  {
+            fprintf(stderr, "Write to client %s failed\n", inet_ntoa(client->ipaddr));
+            remove_client(clients_list, client->fd);
+        }
+        return;
     }
     
     // We found the one we wanted to remove
@@ -721,10 +711,10 @@ void unfollow(struct client **clients_list, struct client *client, struct client
     // Remove client from to_unfollow's follwer list
     for (i = 0; i < FOLLOW_LIMIT; i++) {
         if (to_unfollow->followers[i] != NULL) {
-	    if (to_unfollow->followers[i]->fd == client->fd) {
+	        if (to_unfollow->followers[i]->fd == client->fd) {
 	        break;
+	        }
 	    }
-	}
     }
     // Since we already checked if client actually follows to_unfollow above, we don't need to check it again here
     to_unfollow->followers[i] = NULL;
@@ -736,8 +726,8 @@ void unfollow(struct client **clients_list, struct client *client, struct client
     }
     if (write(client->fd, unfollow, strlen(unfollow)) == -1) {
         fprintf(stderr, "writing to client %s failed\n", inet_ntoa(client->ipaddr));
-	remove_client(clients_list, client->fd);
-	return;
+	    remove_client(clients_list, client->fd);
+	    return;
     }
     printf("%s has unfollowed %s\n", client->username, to_unfollow->username);
 
@@ -747,23 +737,22 @@ void unfollow(struct client **clients_list, struct client *client, struct client
 void show_messages(struct client **clients_list, struct client *client) {
     for (int i = 0; i < FOLLOW_LIMIT; i++) {
         if (client->following[i] != NULL) {
-	    for (int j = 0; j < MSG_LIMIT; j++) {
-	        if (strlen((client->following[i])->message[j]) > 0) {
-		    char message[9 + strlen((client->following[i])->username) + BUF_SIZE];
-		    if (sprintf(message, "%s said: %s\r\n", client->following[i]->username, 
-					    (client->following[i])->message[j]) < 0) {
-		        fprintf(stderr, "sprintf error\n");
-		    }
-		    if (write(client->fd, message, (int)strlen(message)) == -1) {
-		        fprintf(stderr, "writing to client %s failed\n", inet_ntoa(client->ipaddr));
-			remove_client(clients_list, client->fd);
-			return;
-		    }
-		}
+	        for (int j = 0; j < MSG_LIMIT; j++) {
+                if (strlen((client->following[i])->message[j]) > 0) {
+                    char message[9 + strlen((client->following[i])->username) + BUF_SIZE];
+                    if (sprintf(message, "%s said: %s\r\n", client->following[i]->username, 
+                            (client->following[i])->message[j]) < 0) {
+                        fprintf(stderr, "sprintf error\n");
+                    }
+                    if (write(client->fd, message, (int)strlen(message)) == -1) {
+                        fprintf(stderr, "writing to client %s failed\n", inet_ntoa(client->ipaddr));
+                        remove_client(clients_list, client->fd);
+                        return;
+                    }
+		        }
+	        }
 	    }
-	}
     }
-
 }
 
 // Send message to all of client's followers. 
@@ -776,9 +765,9 @@ void send_message(struct client **clients_list, struct client *client, char *mes
     // so we copy the strlen before hand
     int i;
     for (i = 0; i < MSG_LIMIT; i++) {
-         if (strlen(client->message[i]) == 0) {
-	      break;
-	 }
+        if (strlen(client->message[i]) == 0) {
+	        break;
+	    }
     }
     // Either we found an empty message slot of i = MSG_LIMIT
     // If i = MSG_LIMIT then the client has sent MSG_LIMIT messages already
@@ -786,12 +775,12 @@ void send_message(struct client **clients_list, struct client *client, char *mes
         char error[67];
         if (sprintf(error, "You have sent too many messages! You can send up to %d messages.\r\n", MSG_LIMIT) < 0) {
 	    fprintf(stderr, "sprintf error\n");
-	}
-	if (write(client->fd, error, strlen(error)) == -1) {
-	    fprintf(stderr, "Writing to %s failed\n", inet_ntoa(client->ipaddr));
-	    remove_client(clients_list, client->fd);
-	}
-	return;
+	    }
+	    if (write(client->fd, error, strlen(error)) == -1) {
+	        fprintf(stderr, "Writing to %s failed\n", inet_ntoa(client->ipaddr));
+	        remove_client(clients_list, client->fd);
+	    }
+	    return;
     }
 
     // Copy 140 words
@@ -800,7 +789,7 @@ void send_message(struct client **clients_list, struct client *client, char *mes
     char *announcement = malloc(140 + strlen(client->username) + 2);
     if (announcement == NULL) {
         perror("malloc");
-	exit(1);
+	    exit(1);
     }
     if (sprintf(announcement, "%s: %s\r\n", client->username, client->message[i]) < 0) {
         fprintf(stderr, "sprintf error\n");
