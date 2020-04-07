@@ -139,9 +139,9 @@ void remove_client(struct client **clients, int fd) {
 
     if (curr != NULL) {
 	struct client *temp;
-	if (prev != NULL) { // curr is the one before the node we want to remove
-	     temp = curr->next;
-	     curr->next = temp->next;
+	if (prev != NULL) { // curr is not the start of the list
+	     temp = prev->next;
+	     prev->next = temp->next;
 	} else { // Prev is null so curr is the start of the list
 	     *clients = curr->next;
 	     temp = curr;
@@ -492,13 +492,12 @@ char * read_from_client(struct client **clients_list, struct client *client_ptr)
     int nbytes = 0;
     char *message = NULL;
  
-    /* if ((nbytes = read(client_ptr->fd, client_ptr->in_ptr, room)) == -1) {
+    if ((nbytes = read(client_ptr->fd, client_ptr->in_ptr, room)) == -1) {
         fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client_ptr->ipaddr));
 	remove_client(clients_list, client_ptr->fd);
 	return message;
     } else if (nbytes > 0) {
-    */
-    while ((nbytes = read(client_ptr->fd, client_ptr->in_ptr, room)) > 0) {
+    // while ((nbytes = read(client_ptr->fd, client_ptr->in_ptr, room)) > 0) {
         printf("[%d] Read %d bytes\n", client_ptr->fd, nbytes);
         inbuf += nbytes;
         int where;
