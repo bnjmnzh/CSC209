@@ -188,6 +188,7 @@ int main (int argc, char **argv) {
 				    // Client wants to quit
 				    free(input);
 				    remove_client(&new_clients, p->fd);
+				    
 				    break;
 				    
 				} else if (verify != -1) {
@@ -249,18 +250,26 @@ int main (int argc, char **argv) {
                             if ( (input = read_from_client(&active_clients, p)) != NULL) {
 			    	int verify = verify_input(input);
 				printf("%s: %s\n", p->username, input);
+
+				// Good bye message if client quits
+				char goodbye[12 + strlen(p->username)];
+				if (sprintf(goodbye, "Good bye %s\r\n", p->username) < 0) {
+				    fprintf(stderr, "fprintf error\n");
+				}
 				if (verify == -1) {
 				    free(input);
 				    char *error = INVALID;
 				    if (write(p->fd, error, strlen(error)) == -1) {
 				        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
-				        remove_client(&active_clients, p->fd);
+					remove_client(&active_clients, p->fd);
+					make_announcement(&active_clients, goodbye);
 					continue;
 				    }
 				    break;
 				} else if (verify == 0) {
 				    free(input);
 				    remove_client(&active_clients, p->fd);
+				    make_announcement(&active_clients, goodbye);
 				    // Client wants to quit
 				    break;
 
@@ -282,9 +291,10 @@ int main (int argc, char **argv) {
 					struct client *to_follow = find_user(active_clients, rest);
 					if (to_follow == NULL) {
 					    char *error = NOT_EXIST; 
-					    if(write(p->fd, error, strlen(error)) == -1) {
+					    if (write(p->fd, error, strlen(error)) == -1) {
 					        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
 					        remove_client(&active_clients, p->fd);
+						make_announcement(&active_clients, goodbye);
 						continue;
 					    }
 					} else {
@@ -300,6 +310,7 @@ int main (int argc, char **argv) {
 					    if (write(p->fd, error, strlen(error)) == -1) {
 					        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(p->ipaddr));
 					        remove_client(&new_clients, p->fd);
+						make_announcement(&active_clients, goodbye);
 						continue;
 					    }
 					} else {
@@ -396,12 +407,7 @@ void remove_client(struct client **clients, int fd) {
                 }
             }
         }
-        char announcement[12 + strlen(temp->username)];
-        if (sprintf(announcement, "Good bye %s\r\n", temp->username) < 0) {
-            fprintf(stderr, "fprintf error\n");
-        }
         printf("Good bye %s\n", temp->username);
-        make_announcement(clients, announcement);
         printf("Removing client %d %s\n", fd, inet_ntoa(temp->ipaddr));
         FD_CLR(fd, &allset);
         close(temp->fd);
@@ -418,8 +424,13 @@ void announce(struct client **clients_list, struct client *active_clients[], cha
     for (int i = 0; i < FOLLOW_LIMIT; i++) {
         if (active_clients[i] != NULL) {
 	        if (write(active_clients[i]->fd, s, strlen(s)) == -1) {
+			char announcement[12 + strlen(active_clients[i]->username)];
+			if (sprintf(announcement, "Good bye %s\r\n", active_clients[i]->username) < 0) {
+			    fprintf(stderr, "fprintf error\n");
+			}
 	            fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(active_clients[i]->ipaddr));
 		        remove_client(clients_list, active_clients[i]->fd);
+			make_announcement(clients_list, announcement);
 	        }
 	    }
     }
@@ -433,8 +444,13 @@ void make_announcement(struct client **active_clients, char *s) {
     struct client *curr;
     for (curr = *active_clients; curr; curr = curr->next) {
         if (write(curr->fd, s, strlen(s)) == -1) {
+		char announcement[12 + strlen(curr->username)];
+		if (sprintf(announcement, "Good bye %s\r\n", curr->username) < 0) {
+		    fprintf(stderr, "fprintf error\n");
+		}
 	        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(curr->ipaddr));
 	        remove_client(active_clients, curr->fd);
+		make_announcement(active_clients, announcement);
 	    }
     }
 }
@@ -488,14 +504,22 @@ int find_network_newline(const char *buf, int n) {
 // If a message is successfully read, it is placed in an available slot in clients messages
 // The string is returned, and NULL is returned in any other case
 char * read_from_client(struct client **clients_list, struct client *client_ptr) {
-    int inbuf = 0;
-    int room = sizeof(client_ptr->inbuf);
-    int nbytes = 0;
+    // int inbuf = client_ptr->in_ptr - client_ptr->inbuf;
+    // int room = sizeof(client_ptr->inbuf);
+    // int nbytes = 0;
+    int nbytes;
+    int inbuf = client_ptr->in_ptr - client_ptr->inbuf;
+    int room = BUF_SIZE - inbuf;
     char *message = NULL;
  
     if ((nbytes = read(client_ptr->fd, client_ptr->in_ptr, room)) == 0) {
+	    char announcement[12 + strlen(client_ptr->username)];
+	    if (sprintf(announcement, "Good bye %s\r\n", client_ptr->username) < 0) {
+	        fprintf(stderr, "fprintf error\n");
+	    }
         fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client_ptr->ipaddr));
 	remove_client(clients_list, client_ptr->fd);
+	make_announcement(clients_list, announcement);
 	return message;
     } else if (nbytes == -1) {
 	perror("write");
@@ -507,7 +531,7 @@ char * read_from_client(struct client **clients_list, struct client *client_ptr)
 
 	where = find_network_newline(client_ptr->inbuf, inbuf);
 	if (where == -1) {
-		client_ptr->in_ptr = client_ptr->in_ptr + inbuf;
+		client_ptr->in_ptr = client_ptr->inbuf + inbuf;
 		return message;
 	}
 	client_ptr->inbuf[where - 2] = '\0';
@@ -618,8 +642,13 @@ void follow(struct client **clients_list, struct client *client, struct client *
 	        fprintf(stderr, "sprintf error\n");
 	    }
         if (write(client->fd, error, strlen(error)) == -1) {
+		char announcement[12 + strlen(client->username)];
+		if (sprintf(announcement, "Good bye %s\r\n", client->username) < 0) {
+		    fprintf(stderr, "fprintf error\n");
+		}
 	        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client->ipaddr));    
 	        remove_client(clients_list, client->fd);
+		make_announcement(clients_list, announcement);
 	    }
 	    return;
     }
@@ -630,8 +659,13 @@ void follow(struct client **clients_list, struct client *client, struct client *
 	        fprintf(stderr, "sprintf error\n");
 	    }
 	    if (write(client->fd, error, strlen(error)) == -1) {
+		char announcement[12 + strlen(client->username)];
+		if (sprintf(announcement, "Good bye %s\r\n", client->username) < 0) {
+		    fprintf(stderr, "fprintf error\n");
+		}
 	        fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client->ipaddr));
-	        remove_client(clients_list, client->fd);	    
+	        remove_client(clients_list, client->fd);
+		make_announcement(clients_list, announcement);		
 	    }
 	    return;
     }
@@ -659,20 +693,30 @@ void follow(struct client **clients_list, struct client *client, struct client *
     // Tell client the follow was sucessfull, tell to_follow they have a new follower
     char following[25 + strlen(to_follow->username)];
     if (sprintf(following, "You are now following %s!\r\n", to_follow->username) < 0) {
-        fprintf(stderr, "fprintf error\n");
+        fprintf(stderr, "sprintf error\n");
     }
     if (write(client->fd, following, strlen(following)) == -1) {
+	    char announcement[12 + strlen(client->username)];
+	    if (sprintf(announcement, "Good bye %s\r\n", client->username) < 0) {
+	        fprintf(stderr, "sprintf error\n");
+	    }
 	    fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client->ipaddr));
 	    remove_client(clients_list, client->fd);
+	    make_announcement(clients_list, announcement);
 	    return;
     }
     char follower[20 + strlen(client->username)];
     if (sprintf(follower, "%s has followed you!\r\n", client->username) < 0) {
-        fprintf(stderr, "fprintf error\n");
+        fprintf(stderr, "sprintf error\n");
     }
     if (write(to_follow->fd, follower, strlen(follower)) == -1) {
+	    char announcement[12 + strlen(to_follow->username)];
+	    if (sprintf(announcement, "Good bye %s\r\n", to_follow->username) < 0) {
+	        fprintf(stderr, "sprintf error\n");
+	    }
 	    fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(to_follow->ipaddr));
 	    remove_client(clients_list, to_follow->fd);
+	    make_announcement(clients_list, announcement);
 	    return;
     }
 }
@@ -699,8 +743,13 @@ void unfollow(struct client **clients_list, struct client *client, struct client
 	        fprintf(stderr, "sprintf error\n");
 	    }
         if (write(client->fd, error, strlen(error)) == -1)  {
+		char announcement[12 + strlen(client->username)];
+		if (sprintf(announcement, "Good bye %s\r\n", client->username) < 0) {
+		    fprintf(stderr, "sprintf error\n");
+		}
             fprintf(stderr, "Write to client %s failed\n", inet_ntoa(client->ipaddr));
             remove_client(clients_list, client->fd);
+	    make_announcement(clients_list, announcement);
         }
         return;
     }
@@ -725,8 +774,13 @@ void unfollow(struct client **clients_list, struct client *client, struct client
         fprintf(stderr, "sprintf error\n");
     }
     if (write(client->fd, unfollow, strlen(unfollow)) == -1) {
+	    char announcement[12 + strlen(client->username)];
+	    if (sprintf(announcement, "Good bye %s\r\n", client->username) < 0) {
+	        fprintf(stderr, "sprintf error\n");
+	    }
         fprintf(stderr, "writing to client %s failed\n", inet_ntoa(client->ipaddr));
 	    remove_client(clients_list, client->fd);
+	    make_announcement(clients_list, announcement);
 	    return;
     }
     printf("%s has unfollowed %s\n", client->username, to_unfollow->username);
@@ -745,8 +799,13 @@ void show_messages(struct client **clients_list, struct client *client) {
                         fprintf(stderr, "sprintf error\n");
                     }
                     if (write(client->fd, message, (int)strlen(message)) == -1) {
+			    char announcement[12 + strlen(client->username)];
+			    if (sprintf(announcement, "Good bye %s\r\n", client->username) < 0) {
+			        fprintf(stderr, "sprintf error\n");
+			    }
                         fprintf(stderr, "writing to client %s failed\n", inet_ntoa(client->ipaddr));
                         remove_client(clients_list, client->fd);
+			make_announcement(clients_list, announcement);
                         return;
                     }
 		        }
@@ -777,8 +836,13 @@ void send_message(struct client **clients_list, struct client *client, char *mes
 	    fprintf(stderr, "sprintf error\n");
 	    }
 	    if (write(client->fd, error, strlen(error)) == -1) {
+		char announcement[12 + strlen(client->username)];
+		if (sprintf(announcement, "Good bye %s\r\n", client->username) < 0) {
+		    fprintf(stderr, "sprintf error\n");
+		}
 	        fprintf(stderr, "Writing to %s failed\n", inet_ntoa(client->ipaddr));
 	        remove_client(clients_list, client->fd);
+		make_announcement(clients_list, announcement);
 	    }
 	    return;
     }
