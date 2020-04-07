@@ -523,9 +523,12 @@ char * read_from_client(struct client **clients_list, struct client *client_ptr)
             return message;
         }
     }
-    if (nbytes == -1) {
+    if (nbytes == 0) {
         fprintf(stderr, "Writing to client %s failed\n", inet_ntoa(client_ptr->ipaddr));
 	remove_client(clients_list, client_ptr->fd);
+    } else if (nbytes == -1) {
+        perror("write");
+	exit(1);
     }
     return message;
 }
