@@ -386,6 +386,7 @@ void add_client(struct client **clients, int fd, struct in_addr addr)
         exit(1);
     }
 
+    memset(p, 0, sizeof(struct client));
     printf("Adding client %s\n", inet_ntoa(addr));
     p->fd = fd;
     p->ipaddr = addr;
