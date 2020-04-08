@@ -42,11 +42,8 @@ struct client
 
 // Provided functions.
 void add_client(struct client **clients, int fd, struct in_addr addr);
-void remove_client(struct client **clients, int fd);
 
-// These are some of the function prototypes that we used in our solution
-// You are not required to write functions that match these prototypes, but
-// you may find them helpful when thinking about operations in your program.
+void remove_client(struct client **clients, int fd);
 
 // Send the message in s to all clients in active_clients (sequential list)
 void announce(struct client **clients_list, struct client *active_clients[], char *s);
@@ -450,8 +447,8 @@ void remove_client(struct client **clients, int fd)
                     if (temp->following[i]->followers[j] != NULL && temp->following[i]->followers[j]->fd == fd)
                     {
                         printf("%s is no longer following %s because the former disconnected\n", 
-					temp->username, temp->following[i]->username);
-			temp->following[i]->followers[j] = NULL;
+					    temp->username, temp->following[i]->username);
+			            temp->following[i]->followers[j] = NULL;
                     }
                 }
             }
@@ -465,8 +462,8 @@ void remove_client(struct client **clients, int fd)
                     if (temp->followers[i]->following[i] != NULL && temp->followers[i]->following[j]->fd == fd)
                     {
                         printf("%s is no longer following %s because the latter disconnected\n", 
-					temp->followers[i]->username, temp->username);
-			temp->followers[i]->following[j] = NULL;
+					    temp->followers[i]->username, temp->username);
+			            temp->followers[i]->following[j] = NULL;
                     }
                 }
             }
