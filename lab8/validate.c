@@ -62,7 +62,7 @@ int main(void){
     if((newline = strchr(password, '\n')) != NULL) {
         *newline = '\0';
     }
-
+    
     // We expect userid to have enough space to concatenate ":" + password
     // but we will play it safe and use strncat
     strncat(userid, ":", MAXLINE - strlen(userid) - 1);

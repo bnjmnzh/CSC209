@@ -14,19 +14,22 @@ int main(int argc, char **argv) {
     }
 
     iterations = strtol(argv[1], NULL, 10);
+    pid_t parent = getpid();
 
     for (i = 0; i < iterations; i++) {
-        int n = fork();
-        if (n < 0) {
-            perror("fork");
-            exit(1);
-        }
-	printf("ppid = %d, pid = %d, i = %d\n", getppid(), getpid(), i);
-        if (n == 0) {
-	    exit(0);
+	if (getpid() == parent) {
+	    int n = fork();
+            if (n < 0) {
+                perror("fork");
+                exit(1);
+            }
 	}
+	printf("ppid = %d, pid = %d, i = %d\n", getppid(), getpid(), i);
     } 
 
+    if (getpid() != parent) {
+        exit(0);
+    }
 
     for (i = 0; i < iterations; i++) {
     	pid_t pid;

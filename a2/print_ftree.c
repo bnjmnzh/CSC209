@@ -9,12 +9,12 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Usage:\n\tprint_ftree PATH\n");
         return 1;
     }
-
+    
     struct TreeNode *root = generate_ftree(argv[1]);
     if (root == NULL) {
         return 1;
     }
-
+   
     print_ftree(root);
 
     deallocate_ftree(root); 

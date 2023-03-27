@@ -54,8 +54,7 @@ struct TreeNode *ftree_helper(const char *fname, char *path) {
 
     // Check if fname points to an existing entry
     if (lstat(relative_path, &stat_buf) == -1) { 
-        fprintf(stderr, "The path (%s) does not point \
-			to an existing entry!\n", relative_path);
+        fprintf(stderr, "The path (%s) does not point to an existing entry!\n", relative_path);
 	return NULL;
     }
 

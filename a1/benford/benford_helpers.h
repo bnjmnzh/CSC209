@@ -1,5 +1,5 @@
 #ifndef BASE
-#define BASE 10
+#define BASE 2
 #endif
 
 void add_to_tally(int num, int i, int *tally);

@@ -1,4 +1,4 @@
-PORT=y
+PORT=25476
 FLAGS = -DPORT=$(PORT) -Wall -g -std=gnu99 
 
 twerver : twerver.o socket.o

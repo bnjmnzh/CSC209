@@ -6,3 +6,4 @@ bluewhales:swim
 killerwhales:swim
 cats:climbtrees
 monkeys:eatcoconuts
+shuklah3:password
